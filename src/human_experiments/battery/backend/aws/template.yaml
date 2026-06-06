@@ -1,0 +1,112 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Generic human-experiment backend (S3 + Lambda + API Gateway)
+
+Parameters:
+  ExperimentName:
+    Type: String
+    Description: Logical name of this experiment instance; used as S3 prefix
+    AllowedPattern: ^[a-zA-Z0-9-]+$
+
+Globals:
+  Function:
+    Runtime: nodejs18.x
+    Timeout: 30
+    Environment:
+      Variables:
+        BUCKET_NAME: !Ref ExperimentDataBucket
+        EXPERIMENT_NAME: !Ref ExperimentName
+
+Resources:
+  ExperimentDataBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${AWS::StackName}-${AWS::AccountId}'
+      VersioningConfiguration: { Status: Enabled }
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault: { SSEAlgorithm: AES256 }
+
+  SubmitDataFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-submit'
+      CodeUri: lambda/submit-data/
+      Handler: index.handler
+      Policies:
+        - S3WritePolicy: { BucketName: !Ref ExperimentDataBucket }
+      Events:
+        SubmitDataAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ExperimentAPI
+            Path: /submitData
+            Method: POST
+
+  GetDataFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-get'
+      CodeUri: lambda/get-data/
+      Handler: index.handler
+      Policies:
+        - S3ReadPolicy: { BucketName: !Ref ExperimentDataBucket }
+      Events:
+        GetDataAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ExperimentAPI
+            Path: /getData
+            Method: GET
+
+  GetSlotFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-slot'
+      CodeUri: lambda/getSlot/
+      Handler: index.handler
+      Environment:
+        Variables:
+          DATA_BUCKET: !Ref ExperimentDataBucket
+      Policies:
+        - S3CrudPolicy: { BucketName: !Ref ExperimentDataBucket }
+      Events:
+        GetSlotAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ExperimentAPI
+            Path: /getSlot
+            Method: GET
+        GetSlotPostAPI:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ExperimentAPI
+            Path: /getSlot
+            Method: POST
+
+  ExperimentAPI:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Cors:
+        AllowMethods: "'GET,POST,OPTIONS'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: "'*'"
+
+Outputs:
+  APIGatewayURL:
+    Description: API Gateway endpoint URL
+    Value: !Sub 'https://${ExperimentAPI}.execute-api.${AWS::Region}.amazonaws.com/prod'
+  DataSubmissionURL:
+    Value: !Sub 'https://${ExperimentAPI}.execute-api.${AWS::Region}.amazonaws.com/prod/submitData'
+  DataRetrievalURL:
+    Value: !Sub 'https://${ExperimentAPI}.execute-api.${AWS::Region}.amazonaws.com/prod/getData'
+  SlotAssignmentURL:
+    Value: !Sub 'https://${ExperimentAPI}.execute-api.${AWS::Region}.amazonaws.com/prod/getSlot'
+  S3BucketName:
+    Value: !Ref ExperimentDataBucket

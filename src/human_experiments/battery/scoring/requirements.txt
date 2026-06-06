@@ -1,0 +1,12 @@
+# Offline scoring dependencies.
+# Core (RAT accuracy, SCTT fluency, orchestration):
+numpy>=1.24
+pandas>=2.0
+
+# DAT / DRAT embedding scores (GloVe / FastText via gensim):
+gensim>=4.3
+
+# Optional — SCTT creativity scoring with the fine-tuned RoBERTa model (OSF 439zs).
+# Heavy; install only if scoring SCTT locally rather than via the CAP web tool.
+# torch>=2.0
+# transformers>=4.30

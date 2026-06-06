@@ -1,0 +1,50 @@
+# Battery configuration — consumed by prepare_battery.py to emit js/battery-data.js.
+#
+# A "battery" is one within-subjects session in which each participant takes the
+# included tests in a counterbalanced order. Edit this file, then run:
+#
+#   python prepare_battery.py --config battery_config.example.yaml
+#
+# It prints TOTAL_SLOTS — set that value in backend/supabase/schema.sql
+# (generate_series upper bound = TOTAL_SLOTS - 1) and as the TOTAL_SLOTS env var
+# on the get-slot function.
+
+battery_version: "1.0.0"
+
+# Which tests to include, and in what canonical (pre-counterbalance) order.
+# Drop any you don't want — the engine only runs what's listed here.
+included_tests: [dat, rat, sctt, drat]
+
+# How to counterbalance test ORDER across participants:
+#   full_permutations  → every permutation of included_tests (n! orders)
+#   latin_square       → a balanced Latin square (n orders; each test appears
+#                        once in each position)
+#   explicit           → use the `explicit_orders` list verbatim
+order_policy: latin_square
+explicit_orders: []        # only used when order_policy == explicit
+
+# Each (order × DRAT-anchor-set) cell is filled this many times before the slot
+# space wraps. TOTAL_SLOTS = n_orders * n_anchor_sets * replications_per_cell.
+# Give attrition headroom (server slots are claimed at session start; mid-battery
+# dropouts consume a slot without producing a submission).
+replications_per_cell: 5
+
+# Per-test parameters.
+tests:
+  dat:
+    n_words: 10
+    time_limit_sec: 240           # 4-minute cap (Olson et al. 2021)
+  rat:
+    item_bank: item_banks/rat_cra_144.json
+    n_items: 30                   # seeded subsample of the 144 (null = all 144)
+    item_select: easiest          # easiest | hardest | random (by norm_rank)
+    item_time_limit_sec: 15       # per-item deadline
+  sctt:
+    item_bank: item_banks/sctt_beaty_2026.json
+    n_responses_per_item: 3       # Beaty design fixes this at 3
+    time_limit_sec: null          # self-paced (null = no whole-test timer)
+  drat:
+    anchor_bank: item_banks/drat_anchors.example.json
+    n_words: 10
+    k_anchors: 4
+    time_limit_sec: 240

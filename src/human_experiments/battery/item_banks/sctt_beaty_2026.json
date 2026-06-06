@@ -1,0 +1,83 @@
+{
+  "source": "Cortes, Luchini, Green & Beaty (2026), The Scientific Creative Thinking Test (SCTT): Reliability, Validity, and Automated Scoring. Creativity Research Journal. doi:10.1080/10400419.2026.2639038. Materials: OSF 439zs. Final bank = 12 items (4 per subtest). Participants give exactly N_RESPONSES (=3) free-text responses per item; self-paced.",
+  "n_responses_per_item": 3,
+  "subtests": {
+    "research_question": "Research question generation — read the scenario and ask scientific questions about it.",
+    "hypothesis": "Hypothesis generation — read the observation and propose hypotheses for why it is the case.",
+    "experiment": "Experimental design — read the claim/hypothesis and describe how you would test it."
+  },
+  "items": [
+    {
+      "item_id": "sctt_rq_1",
+      "task": "research question",
+      "prompt": "a planet outside our galaxy",
+      "prompt_html": "You travel on a spaceship to a new planet outside of our galaxy. <b>What scientific questions could you ask about this planet?</b>"
+    },
+    {
+      "item_id": "sctt_rq_2",
+      "task": "research question",
+      "prompt": "an unexplored part of the ocean floor",
+      "prompt_html": "You created the first vehicle that can reach an unexplored part of the ocean floor. <b>What scientific questions could you ask about this part of the ocean floor?</b>"
+    },
+    {
+      "item_id": "sctt_rq_3",
+      "task": "research question",
+      "prompt": "a jungle unknown to science",
+      "prompt_html": "You travel to a jungle that contains no human life and is completely unknown to the scientific community. <b>What scientific questions could you ask about this jungle?</b>"
+    },
+    {
+      "item_id": "sctt_rq_4",
+      "task": "research question",
+      "prompt": "people who communicate without speaking",
+      "prompt_html": "You discover a remote island with people who communicate without speaking. <b>What scientific questions could you ask about this?</b>"
+    },
+    {
+      "item_id": "sctt_hyp_1",
+      "task": "hypothesis",
+      "prompt": "why more students sing in the hallways at a new school",
+      "prompt_html": "You just started going to a new school. You notice that more students sing in the hallways at this school than at your old school. <b>What hypotheses do you have about why that is?</b>"
+    },
+    {
+      "item_id": "sctt_hyp_2",
+      "task": "hypothesis",
+      "prompt": "why dogs like one friend and cats like another",
+      "prompt_html": "You notice that dogs seem to like one of your friends, but cats seem to like another friend. <b>What hypotheses do you have about why that is?</b>"
+    },
+    {
+      "item_id": "sctt_hyp_3",
+      "task": "hypothesis",
+      "prompt": "why one lake is warmer than another with the same sunlight",
+      "prompt_html": "You notice that the water in one lake is warmer than the water in another lake even though they both get the same amount of sunlight. <b>What hypotheses do you have about why that is?</b>"
+    },
+    {
+      "item_id": "sctt_hyp_4",
+      "task": "hypothesis",
+      "prompt": "why stars are disappearing one by one from the sky",
+      "prompt_html": "You look outside one night and see stars disappearing one by one from the sky. <b>What hypotheses do you have about why that is?</b>"
+    },
+    {
+      "item_id": "sctt_exp_1",
+      "task": "experiment",
+      "prompt": "testing whether only water and sunlight determine flower growth",
+      "prompt_html": "Your friend thinks only water and sunlight determine how much a flower grows, and nothing else matters. <b>How could you test that hypothesis?</b>"
+    },
+    {
+      "item_id": "sctt_exp_2",
+      "task": "experiment",
+      "prompt": "testing whether someone can read minds",
+      "prompt_html": "Your cousin claims they can read minds, but it only works when a person doesn't know their mind is being read. <b>How could you test to see if this super power is real?</b>"
+    },
+    {
+      "item_id": "sctt_exp_3",
+      "task": "experiment",
+      "prompt": "testing whether students at your school are friendlier",
+      "prompt_html": "You think students at your school are friendlier than students at most schools. <b>How could you test that hypothesis?</b>"
+    },
+    {
+      "item_id": "sctt_exp_4",
+      "task": "experiment",
+      "prompt": "testing whether some animals have a sense of humor",
+      "prompt_html": "You think some animals have a sense of humor that humans don't usually understand. <b>How could you test that hypothesis?</b>"
+    }
+  ]
+}
