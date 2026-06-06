@@ -1,0 +1,11 @@
+version = 0.1
+
+[default.deploy.parameters]
+stack_name = "human-experiment-CHANGE-ME"
+s3_prefix  = "human-experiment-CHANGE-ME"
+region = "us-east-1"
+confirm_changeset = false
+capabilities = "CAPABILITY_IAM"
+resolve_s3 = true
+image_repositories = []
+parameter_overrides = "ExperimentName=CHANGE-ME"

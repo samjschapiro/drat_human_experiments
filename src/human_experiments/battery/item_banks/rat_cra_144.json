@@ -1,0 +1,1590 @@
+{
+  "source": "Bowden & Jung-Beeman (2003), 144 Compound Remote Associates. Items: github.com/schatzju/RAT_research/raw_144.txt (row order matches the paper's appendix, sorted by descending 15s solve rate).",
+  "n_items": 144,
+  "items": [
+    {
+      "item_id": "rat_001",
+      "cues": [
+        "cottage",
+        "swiss",
+        "cake"
+      ],
+      "solution": "cheese",
+      "difficulty_pct_15s": null,
+      "norm_rank": 1
+    },
+    {
+      "item_id": "rat_002",
+      "cues": [
+        "cream",
+        "skate",
+        "water"
+      ],
+      "solution": "ice",
+      "difficulty_pct_15s": null,
+      "norm_rank": 2
+    },
+    {
+      "item_id": "rat_003",
+      "cues": [
+        "loser",
+        "throat",
+        "spot"
+      ],
+      "solution": "sore",
+      "difficulty_pct_15s": null,
+      "norm_rank": 3
+    },
+    {
+      "item_id": "rat_004",
+      "cues": [
+        "show",
+        "life",
+        "row"
+      ],
+      "solution": "boat",
+      "difficulty_pct_15s": null,
+      "norm_rank": 4
+    },
+    {
+      "item_id": "rat_005",
+      "cues": [
+        "night",
+        "wrist",
+        "stop"
+      ],
+      "solution": "watch",
+      "difficulty_pct_15s": null,
+      "norm_rank": 5
+    },
+    {
+      "item_id": "rat_006",
+      "cues": [
+        "duck",
+        "fold",
+        "dollar"
+      ],
+      "solution": "bill",
+      "difficulty_pct_15s": null,
+      "norm_rank": 6
+    },
+    {
+      "item_id": "rat_007",
+      "cues": [
+        "rocking",
+        "wheel",
+        "high"
+      ],
+      "solution": "chair",
+      "difficulty_pct_15s": null,
+      "norm_rank": 7
+    },
+    {
+      "item_id": "rat_008",
+      "cues": [
+        "dew",
+        "comb",
+        "bee"
+      ],
+      "solution": "honey",
+      "difficulty_pct_15s": null,
+      "norm_rank": 8
+    },
+    {
+      "item_id": "rat_009",
+      "cues": [
+        "fountain",
+        "baking",
+        "pop"
+      ],
+      "solution": "soda",
+      "difficulty_pct_15s": null,
+      "norm_rank": 9
+    },
+    {
+      "item_id": "rat_010",
+      "cues": [
+        "preserve",
+        "ranger",
+        "tropical"
+      ],
+      "solution": "forest",
+      "difficulty_pct_15s": null,
+      "norm_rank": 10
+    },
+    {
+      "item_id": "rat_011",
+      "cues": [
+        "aid",
+        "rubber",
+        "wagon"
+      ],
+      "solution": "band",
+      "difficulty_pct_15s": null,
+      "norm_rank": 11
+    },
+    {
+      "item_id": "rat_012",
+      "cues": [
+        "flake",
+        "mobile",
+        "cone"
+      ],
+      "solution": "snow",
+      "difficulty_pct_15s": null,
+      "norm_rank": 12
+    },
+    {
+      "item_id": "rat_013",
+      "cues": [
+        "cracker",
+        "fly",
+        "fighter"
+      ],
+      "solution": "fire",
+      "difficulty_pct_15s": null,
+      "norm_rank": 13
+    },
+    {
+      "item_id": "rat_014",
+      "cues": [
+        "safety",
+        "cushion",
+        "point"
+      ],
+      "solution": "pin",
+      "difficulty_pct_15s": null,
+      "norm_rank": 14
+    },
+    {
+      "item_id": "rat_015",
+      "cues": [
+        "cane",
+        "daddy",
+        "plum"
+      ],
+      "solution": "sugar",
+      "difficulty_pct_15s": null,
+      "norm_rank": 15
+    },
+    {
+      "item_id": "rat_016",
+      "cues": [
+        "dream",
+        "break",
+        "light"
+      ],
+      "solution": "day",
+      "difficulty_pct_15s": null,
+      "norm_rank": 16
+    },
+    {
+      "item_id": "rat_017",
+      "cues": [
+        "fish",
+        "mine",
+        "rush"
+      ],
+      "solution": "gold",
+      "difficulty_pct_15s": null,
+      "norm_rank": 17
+    },
+    {
+      "item_id": "rat_018",
+      "cues": [
+        "political",
+        "surprise",
+        "line"
+      ],
+      "solution": "party",
+      "difficulty_pct_15s": null,
+      "norm_rank": 18
+    },
+    {
+      "item_id": "rat_019",
+      "cues": [
+        "measure",
+        "worm",
+        "video"
+      ],
+      "solution": "tape",
+      "difficulty_pct_15s": null,
+      "norm_rank": 19
+    },
+    {
+      "item_id": "rat_020",
+      "cues": [
+        "high",
+        "district",
+        "house"
+      ],
+      "solution": "school",
+      "difficulty_pct_15s": null,
+      "norm_rank": 20
+    },
+    {
+      "item_id": "rat_021",
+      "cues": [
+        "sense",
+        "courtesy",
+        "place"
+      ],
+      "solution": "common",
+      "difficulty_pct_15s": null,
+      "norm_rank": 21
+    },
+    {
+      "item_id": "rat_022",
+      "cues": [
+        "worm",
+        "shelf",
+        "end"
+      ],
+      "solution": "book",
+      "difficulty_pct_15s": null,
+      "norm_rank": 22
+    },
+    {
+      "item_id": "rat_023",
+      "cues": [
+        "piece",
+        "mind",
+        "dating"
+      ],
+      "solution": "game",
+      "difficulty_pct_15s": null,
+      "norm_rank": 23
+    },
+    {
+      "item_id": "rat_024",
+      "cues": [
+        "flower",
+        "friend",
+        "scout"
+      ],
+      "solution": "girl",
+      "difficulty_pct_15s": null,
+      "norm_rank": 24
+    },
+    {
+      "item_id": "rat_025",
+      "cues": [
+        "river",
+        "note",
+        "account"
+      ],
+      "solution": "bank",
+      "difficulty_pct_15s": null,
+      "norm_rank": 25
+    },
+    {
+      "item_id": "rat_026",
+      "cues": [
+        "print",
+        "berry",
+        "bird"
+      ],
+      "solution": "blue",
+      "difficulty_pct_15s": null,
+      "norm_rank": 26
+    },
+    {
+      "item_id": "rat_027",
+      "cues": [
+        "pie",
+        "luck",
+        "belly"
+      ],
+      "solution": "pot",
+      "difficulty_pct_15s": null,
+      "norm_rank": 27
+    },
+    {
+      "item_id": "rat_028",
+      "cues": [
+        "date",
+        "alley",
+        "fold"
+      ],
+      "solution": "blind",
+      "difficulty_pct_15s": null,
+      "norm_rank": 28
+    },
+    {
+      "item_id": "rat_029",
+      "cues": [
+        "opera",
+        "hand",
+        "dish"
+      ],
+      "solution": "soap",
+      "difficulty_pct_15s": null,
+      "norm_rank": 29
+    },
+    {
+      "item_id": "rat_030",
+      "cues": [
+        "cadet",
+        "capsule",
+        "ship"
+      ],
+      "solution": "space",
+      "difficulty_pct_15s": null,
+      "norm_rank": 30
+    },
+    {
+      "item_id": "rat_031",
+      "cues": [
+        "fur",
+        "rack",
+        "tail"
+      ],
+      "solution": "coat",
+      "difficulty_pct_15s": null,
+      "norm_rank": 31
+    },
+    {
+      "item_id": "rat_032",
+      "cues": [
+        "stick",
+        "maker",
+        "point"
+      ],
+      "solution": "match",
+      "difficulty_pct_15s": null,
+      "norm_rank": 32
+    },
+    {
+      "item_id": "rat_033",
+      "cues": [
+        "hound",
+        "pressure",
+        "shot"
+      ],
+      "solution": "blood",
+      "difficulty_pct_15s": null,
+      "norm_rank": 33
+    },
+    {
+      "item_id": "rat_034",
+      "cues": [
+        "fox",
+        "man",
+        "peep"
+      ],
+      "solution": "hole",
+      "difficulty_pct_15s": null,
+      "norm_rank": 34
+    },
+    {
+      "item_id": "rat_035",
+      "cues": [
+        "sleeping",
+        "bean",
+        "trash"
+      ],
+      "solution": "bag",
+      "difficulty_pct_15s": null,
+      "norm_rank": 35
+    },
+    {
+      "item_id": "rat_036",
+      "cues": [
+        "dust",
+        "cereal",
+        "fish"
+      ],
+      "solution": "bowl",
+      "difficulty_pct_15s": null,
+      "norm_rank": 36
+    },
+    {
+      "item_id": "rat_037",
+      "cues": [
+        "light",
+        "birthday",
+        "stick"
+      ],
+      "solution": "candle",
+      "difficulty_pct_15s": null,
+      "norm_rank": 37
+    },
+    {
+      "item_id": "rat_038",
+      "cues": [
+        "food",
+        "forward",
+        "break"
+      ],
+      "solution": "fast",
+      "difficulty_pct_15s": null,
+      "norm_rank": 38
+    },
+    {
+      "item_id": "rat_039",
+      "cues": [
+        "shine",
+        "beam",
+        "struck"
+      ],
+      "solution": "moon",
+      "difficulty_pct_15s": null,
+      "norm_rank": 39
+    },
+    {
+      "item_id": "rat_040",
+      "cues": [
+        "peach",
+        "arm",
+        "tar"
+      ],
+      "solution": "pit",
+      "difficulty_pct_15s": null,
+      "norm_rank": 40
+    },
+    {
+      "item_id": "rat_041",
+      "cues": [
+        "water",
+        "mine",
+        "shaker"
+      ],
+      "solution": "salt",
+      "difficulty_pct_15s": null,
+      "norm_rank": 41
+    },
+    {
+      "item_id": "rat_042",
+      "cues": [
+        "palm",
+        "shoe",
+        "house"
+      ],
+      "solution": "tree",
+      "difficulty_pct_15s": null,
+      "norm_rank": 42
+    },
+    {
+      "item_id": "rat_043",
+      "cues": [
+        "basket",
+        "eight",
+        "snow"
+      ],
+      "solution": "ball",
+      "difficulty_pct_15s": null,
+      "norm_rank": 43
+    },
+    {
+      "item_id": "rat_044",
+      "cues": [
+        "wheel",
+        "hand",
+        "shopping"
+      ],
+      "solution": "cart",
+      "difficulty_pct_15s": null,
+      "norm_rank": 44
+    },
+    {
+      "item_id": "rat_045",
+      "cues": [
+        "right",
+        "car",
+        "carbon"
+      ],
+      "solution": "copy",
+      "difficulty_pct_15s": null,
+      "norm_rank": 45
+    },
+    {
+      "item_id": "rat_046",
+      "cues": [
+        "home",
+        "sea",
+        "bed"
+      ],
+      "solution": "sick",
+      "difficulty_pct_15s": null,
+      "norm_rank": 46
+    },
+    {
+      "item_id": "rat_047",
+      "cues": [
+        "nuclear",
+        "feud",
+        "album"
+      ],
+      "solution": "family",
+      "difficulty_pct_15s": null,
+      "norm_rank": 47
+    },
+    {
+      "item_id": "rat_048",
+      "cues": [
+        "sandwich",
+        "house",
+        "gold"
+      ],
+      "solution": "club",
+      "difficulty_pct_15s": null,
+      "norm_rank": 48
+    },
+    {
+      "item_id": "rat_049",
+      "cues": [
+        "cross",
+        "rain",
+        "tie"
+      ],
+      "solution": "bow",
+      "difficulty_pct_15s": null,
+      "norm_rank": 49
+    },
+    {
+      "item_id": "rat_050",
+      "cues": [
+        "sage",
+        "paint",
+        "hair"
+      ],
+      "solution": "brush",
+      "difficulty_pct_15s": null,
+      "norm_rank": 50
+    },
+    {
+      "item_id": "rat_051",
+      "cues": [
+        "french",
+        "car",
+        "show"
+      ],
+      "solution": "horn",
+      "difficulty_pct_15s": null,
+      "norm_rank": 51
+    },
+    {
+      "item_id": "rat_052",
+      "cues": [
+        "boot",
+        "summer",
+        "ground"
+      ],
+      "solution": "camp",
+      "difficulty_pct_15s": null,
+      "norm_rank": 52
+    },
+    {
+      "item_id": "rat_053",
+      "cues": [
+        "chamber",
+        "mask",
+        "natural"
+      ],
+      "solution": "gas",
+      "difficulty_pct_15s": null,
+      "norm_rank": 53
+    },
+    {
+      "item_id": "rat_054",
+      "cues": [
+        "mill",
+        "tooth",
+        "dust"
+      ],
+      "solution": "saw",
+      "difficulty_pct_15s": null,
+      "norm_rank": 54
+    },
+    {
+      "item_id": "rat_055",
+      "cues": [
+        "main",
+        "sweeper",
+        "light"
+      ],
+      "solution": "street",
+      "difficulty_pct_15s": null,
+      "norm_rank": 55
+    },
+    {
+      "item_id": "rat_056",
+      "cues": [
+        "pike",
+        "coat",
+        "signal"
+      ],
+      "solution": "turn",
+      "difficulty_pct_15s": null,
+      "norm_rank": 56
+    },
+    {
+      "item_id": "rat_057",
+      "cues": [
+        "office",
+        "mail",
+        "hat"
+      ],
+      "solution": "box",
+      "difficulty_pct_15s": null,
+      "norm_rank": 57
+    },
+    {
+      "item_id": "rat_058",
+      "cues": [
+        "fly",
+        "clip",
+        "wall"
+      ],
+      "solution": "paper",
+      "difficulty_pct_15s": null,
+      "norm_rank": 58
+    },
+    {
+      "item_id": "rat_059",
+      "cues": [
+        "age",
+        "mile",
+        "sand"
+      ],
+      "solution": "stone",
+      "difficulty_pct_15s": null,
+      "norm_rank": 59
+    },
+    {
+      "item_id": "rat_060",
+      "cues": [
+        "catcher",
+        "food",
+        "hot"
+      ],
+      "solution": "dog",
+      "difficulty_pct_15s": null,
+      "norm_rank": 60
+    },
+    {
+      "item_id": "rat_061",
+      "cues": [
+        "wagon",
+        "break",
+        "radio"
+      ],
+      "solution": "station",
+      "difficulty_pct_15s": null,
+      "norm_rank": 61
+    },
+    {
+      "item_id": "rat_062",
+      "cues": [
+        "tank",
+        "hill",
+        "secret"
+      ],
+      "solution": "top",
+      "difficulty_pct_15s": null,
+      "norm_rank": 62
+    },
+    {
+      "item_id": "rat_063",
+      "cues": [
+        "health",
+        "taker",
+        "less"
+      ],
+      "solution": "care",
+      "difficulty_pct_15s": null,
+      "norm_rank": 63
+    },
+    {
+      "item_id": "rat_064",
+      "cues": [
+        "lift",
+        "card",
+        "mask"
+      ],
+      "solution": "face",
+      "difficulty_pct_15s": null,
+      "norm_rank": 64
+    },
+    {
+      "item_id": "rat_065",
+      "cues": [
+        "dress",
+        "dial",
+        "flower"
+      ],
+      "solution": "sun",
+      "difficulty_pct_15s": null,
+      "norm_rank": 65
+    },
+    {
+      "item_id": "rat_066",
+      "cues": [
+        "force",
+        "line",
+        "mail"
+      ],
+      "solution": "air",
+      "difficulty_pct_15s": null,
+      "norm_rank": 66
+    },
+    {
+      "item_id": "rat_067",
+      "cues": [
+        "guy",
+        "rain",
+        "down"
+      ],
+      "solution": "fall",
+      "difficulty_pct_15s": null,
+      "norm_rank": 67
+    },
+    {
+      "item_id": "rat_068",
+      "cues": [
+        "eight",
+        "skate",
+        "stick"
+      ],
+      "solution": "figure",
+      "difficulty_pct_15s": null,
+      "norm_rank": 68
+    },
+    {
+      "item_id": "rat_069",
+      "cues": [
+        "down",
+        "question",
+        "check"
+      ],
+      "solution": "mark",
+      "difficulty_pct_15s": null,
+      "norm_rank": 69
+    },
+    {
+      "item_id": "rat_070",
+      "cues": [
+        "animal",
+        "back",
+        "rat"
+      ],
+      "solution": "pack",
+      "difficulty_pct_15s": null,
+      "norm_rank": 70
+    },
+    {
+      "item_id": "rat_071",
+      "cues": [
+        "officer",
+        "cash",
+        "larceny"
+      ],
+      "solution": "petty",
+      "difficulty_pct_15s": null,
+      "norm_rank": 71
+    },
+    {
+      "item_id": "rat_072",
+      "cues": [
+        "pine",
+        "crab",
+        "sauce"
+      ],
+      "solution": "apple",
+      "difficulty_pct_15s": null,
+      "norm_rank": 72
+    },
+    {
+      "item_id": "rat_073",
+      "cues": [
+        "house",
+        "thumb",
+        "pepper"
+      ],
+      "solution": "green",
+      "difficulty_pct_15s": null,
+      "norm_rank": 73
+    },
+    {
+      "item_id": "rat_074",
+      "cues": [
+        "carpet",
+        "alert",
+        "ink"
+      ],
+      "solution": "red",
+      "difficulty_pct_15s": null,
+      "norm_rank": 74
+    },
+    {
+      "item_id": "rat_075",
+      "cues": [
+        "master",
+        "toss",
+        "finger"
+      ],
+      "solution": "ring",
+      "difficulty_pct_15s": null,
+      "norm_rank": 75
+    },
+    {
+      "item_id": "rat_076",
+      "cues": [
+        "hammer",
+        "gear",
+        "hunter"
+      ],
+      "solution": "head",
+      "difficulty_pct_15s": null,
+      "norm_rank": 76
+    },
+    {
+      "item_id": "rat_077",
+      "cues": [
+        "knife",
+        "light",
+        "pal"
+      ],
+      "solution": "pen",
+      "difficulty_pct_15s": null,
+      "norm_rank": 77
+    },
+    {
+      "item_id": "rat_078",
+      "cues": [
+        "foul",
+        "ground",
+        "mate"
+      ],
+      "solution": "play",
+      "difficulty_pct_15s": null,
+      "norm_rank": 78
+    },
+    {
+      "item_id": "rat_079",
+      "cues": [
+        "change",
+        "circuit",
+        "cake"
+      ],
+      "solution": "short",
+      "difficulty_pct_15s": null,
+      "norm_rank": 79
+    },
+    {
+      "item_id": "rat_080",
+      "cues": [
+        "way",
+        "board",
+        "sleep"
+      ],
+      "solution": "walk",
+      "difficulty_pct_15s": null,
+      "norm_rank": 80
+    },
+    {
+      "item_id": "rat_081",
+      "cues": [
+        "blank",
+        "list",
+        "mate"
+      ],
+      "solution": "check",
+      "difficulty_pct_15s": null,
+      "norm_rank": 81
+    },
+    {
+      "item_id": "rat_082",
+      "cues": [
+        "tail",
+        "water",
+        "flood"
+      ],
+      "solution": "gate",
+      "difficulty_pct_15s": null,
+      "norm_rank": 82
+    },
+    {
+      "item_id": "rat_083",
+      "cues": [
+        "marshal",
+        "child",
+        "piano"
+      ],
+      "solution": "grand",
+      "difficulty_pct_15s": null,
+      "norm_rank": 83
+    },
+    {
+      "item_id": "rat_084",
+      "cues": [
+        "cover",
+        "arm",
+        "wear"
+      ],
+      "solution": "under",
+      "difficulty_pct_15s": null,
+      "norm_rank": 84
+    },
+    {
+      "item_id": "rat_085",
+      "cues": [
+        "rain",
+        "test",
+        "stomach"
+      ],
+      "solution": "acid",
+      "difficulty_pct_15s": null,
+      "norm_rank": 85
+    },
+    {
+      "item_id": "rat_086",
+      "cues": [
+        "time",
+        "blown",
+        "nelson"
+      ],
+      "solution": "full",
+      "difficulty_pct_15s": null,
+      "norm_rank": 86
+    },
+    {
+      "item_id": "rat_087",
+      "cues": [
+        "pile",
+        "market",
+        "room"
+      ],
+      "solution": "stock",
+      "difficulty_pct_15s": null,
+      "norm_rank": 87
+    },
+    {
+      "item_id": "rat_088",
+      "cues": [
+        "mouse",
+        "bear",
+        "sand"
+      ],
+      "solution": "trap",
+      "difficulty_pct_15s": null,
+      "norm_rank": 88
+    },
+    {
+      "item_id": "rat_089",
+      "cues": [
+        "cat",
+        "number",
+        "phone"
+      ],
+      "solution": "call",
+      "difficulty_pct_15s": null,
+      "norm_rank": 89
+    },
+    {
+      "item_id": "rat_090",
+      "cues": [
+        "keg",
+        "puff",
+        "room"
+      ],
+      "solution": "powder",
+      "difficulty_pct_15s": null,
+      "norm_rank": 90
+    },
+    {
+      "item_id": "rat_091",
+      "cues": [
+        "trip",
+        "house",
+        "goal"
+      ],
+      "solution": "field",
+      "difficulty_pct_15s": null,
+      "norm_rank": 91
+    },
+    {
+      "item_id": "rat_092",
+      "cues": [
+        "fork",
+        "dark",
+        "man"
+      ],
+      "solution": "pitch",
+      "difficulty_pct_15s": null,
+      "norm_rank": 92
+    },
+    {
+      "item_id": "rat_093",
+      "cues": [
+        "fence",
+        "card",
+        "master"
+      ],
+      "solution": "post",
+      "difficulty_pct_15s": null,
+      "norm_rank": 93
+    },
+    {
+      "item_id": "rat_094",
+      "cues": [
+        "test",
+        "runner",
+        "map"
+      ],
+      "solution": "road",
+      "difficulty_pct_15s": null,
+      "norm_rank": 94
+    },
+    {
+      "item_id": "rat_095",
+      "cues": [
+        "dive",
+        "light",
+        "rocket"
+      ],
+      "solution": "sky",
+      "difficulty_pct_15s": null,
+      "norm_rank": 95
+    },
+    {
+      "item_id": "rat_096",
+      "cues": [
+        "man",
+        "glue",
+        "star"
+      ],
+      "solution": "super",
+      "difficulty_pct_15s": null,
+      "norm_rank": 96
+    },
+    {
+      "item_id": "rat_097",
+      "cues": [
+        "tooth",
+        "potato",
+        "heart"
+      ],
+      "solution": "sweet",
+      "difficulty_pct_15s": null,
+      "norm_rank": 97
+    },
+    {
+      "item_id": "rat_098",
+      "cues": [
+        "illness",
+        "bus",
+        "computer"
+      ],
+      "solution": "terminal",
+      "difficulty_pct_15s": null,
+      "norm_rank": 98
+    },
+    {
+      "item_id": "rat_099",
+      "cues": [
+        "type",
+        "ghost",
+        "screen"
+      ],
+      "solution": "writer",
+      "difficulty_pct_15s": null,
+      "norm_rank": 99
+    },
+    {
+      "item_id": "rat_100",
+      "cues": [
+        "mail",
+        "board",
+        "lung"
+      ],
+      "solution": "black",
+      "difficulty_pct_15s": null,
+      "norm_rank": 100
+    },
+    {
+      "item_id": "rat_101",
+      "cues": [
+        "teeth",
+        "arrest",
+        "start"
+      ],
+      "solution": "false",
+      "difficulty_pct_15s": null,
+      "norm_rank": 101
+    },
+    {
+      "item_id": "rat_102",
+      "cues": [
+        "iron",
+        "shovel",
+        "engine"
+      ],
+      "solution": "steam",
+      "difficulty_pct_15s": null,
+      "norm_rank": 102
+    },
+    {
+      "item_id": "rat_103",
+      "cues": [
+        "wet",
+        "law",
+        "business"
+      ],
+      "solution": "suit",
+      "difficulty_pct_15s": null,
+      "norm_rank": 103
+    },
+    {
+      "item_id": "rat_104",
+      "cues": [
+        "rope",
+        "truck",
+        "line"
+      ],
+      "solution": "tow",
+      "difficulty_pct_15s": null,
+      "norm_rank": 104
+    },
+    {
+      "item_id": "rat_105",
+      "cues": [
+        "off",
+        "military",
+        "first"
+      ],
+      "solution": "base",
+      "difficulty_pct_15s": null,
+      "norm_rank": 105
+    },
+    {
+      "item_id": "rat_106",
+      "cues": [
+        "spoon",
+        "cloth",
+        "card"
+      ],
+      "solution": "table",
+      "difficulty_pct_15s": null,
+      "norm_rank": 106
+    },
+    {
+      "item_id": "rat_107",
+      "cues": [
+        "cut",
+        "cream",
+        "war"
+      ],
+      "solution": "cold",
+      "difficulty_pct_15s": null,
+      "norm_rank": 107
+    },
+    {
+      "item_id": "rat_108",
+      "cues": [
+        "note",
+        "chain",
+        "master"
+      ],
+      "solution": "key",
+      "difficulty_pct_15s": null,
+      "norm_rank": 108
+    },
+    {
+      "item_id": "rat_109",
+      "cues": [
+        "shock",
+        "shave",
+        "taste"
+      ],
+      "solution": "after",
+      "difficulty_pct_15s": null,
+      "norm_rank": 109
+    },
+    {
+      "item_id": "rat_110",
+      "cues": [
+        "wise",
+        "work",
+        "tower"
+      ],
+      "solution": "clock",
+      "difficulty_pct_15s": null,
+      "norm_rank": 110
+    },
+    {
+      "item_id": "rat_111",
+      "cues": [
+        "grass",
+        "king",
+        "meat"
+      ],
+      "solution": "crab",
+      "difficulty_pct_15s": null,
+      "norm_rank": 111
+    },
+    {
+      "item_id": "rat_112",
+      "cues": [
+        "baby",
+        "spring",
+        "cap"
+      ],
+      "solution": "shower",
+      "difficulty_pct_15s": null,
+      "norm_rank": 112
+    },
+    {
+      "item_id": "rat_113",
+      "cues": [
+        "break",
+        "bean",
+        "cake"
+      ],
+      "solution": "coffee",
+      "difficulty_pct_15s": null,
+      "norm_rank": 113
+    },
+    {
+      "item_id": "rat_114",
+      "cues": [
+        "cry",
+        "front",
+        "ship"
+      ],
+      "solution": "battle",
+      "difficulty_pct_15s": null,
+      "norm_rank": 114
+    },
+    {
+      "item_id": "rat_115",
+      "cues": [
+        "hold",
+        "print",
+        "stool"
+      ],
+      "solution": "foot",
+      "difficulty_pct_15s": null,
+      "norm_rank": 115
+    },
+    {
+      "item_id": "rat_116",
+      "cues": [
+        "roll",
+        "bean",
+        "fish"
+      ],
+      "solution": "jelly",
+      "difficulty_pct_15s": null,
+      "norm_rank": 116
+    },
+    {
+      "item_id": "rat_117",
+      "cues": [
+        "horse",
+        "human",
+        "drag"
+      ],
+      "solution": "race",
+      "difficulty_pct_15s": null,
+      "norm_rank": 117
+    },
+    {
+      "item_id": "rat_118",
+      "cues": [
+        "oil",
+        "bar",
+        "tuna"
+      ],
+      "solution": "salad",
+      "difficulty_pct_15s": null,
+      "norm_rank": 118
+    },
+    {
+      "item_id": "rat_119",
+      "cues": [
+        "bottom",
+        "curve",
+        "hop"
+      ],
+      "solution": "bell",
+      "difficulty_pct_15s": null,
+      "norm_rank": 119
+    },
+    {
+      "item_id": "rat_120",
+      "cues": [
+        "tomato",
+        "bomb",
+        "picker"
+      ],
+      "solution": "cherry",
+      "difficulty_pct_15s": null,
+      "norm_rank": 120
+    },
+    {
+      "item_id": "rat_121",
+      "cues": [
+        "pea",
+        "shell",
+        "chest"
+      ],
+      "solution": "nut",
+      "difficulty_pct_15s": null,
+      "norm_rank": 121
+    },
+    {
+      "item_id": "rat_122",
+      "cues": [
+        "line",
+        "fruit",
+        "drunk"
+      ],
+      "solution": "punch",
+      "difficulty_pct_15s": null,
+      "norm_rank": 122
+    },
+    {
+      "item_id": "rat_123",
+      "cues": [
+        "bump",
+        "egg",
+        "step"
+      ],
+      "solution": "goose",
+      "difficulty_pct_15s": null,
+      "norm_rank": 123
+    },
+    {
+      "item_id": "rat_124",
+      "cues": [
+        "fight",
+        "control",
+        "machine"
+      ],
+      "solution": "gun",
+      "difficulty_pct_15s": null,
+      "norm_rank": 124
+    },
+    {
+      "item_id": "rat_125",
+      "cues": [
+        "home",
+        "arm",
+        "room"
+      ],
+      "solution": "rest",
+      "difficulty_pct_15s": null,
+      "norm_rank": 125
+    },
+    {
+      "item_id": "rat_126",
+      "cues": [
+        "child",
+        "scan",
+        "wash"
+      ],
+      "solution": "brain",
+      "difficulty_pct_15s": null,
+      "norm_rank": 126
+    },
+    {
+      "item_id": "rat_127",
+      "cues": [
+        "nose",
+        "stone",
+        "bear"
+      ],
+      "solution": "brown",
+      "difficulty_pct_15s": null,
+      "norm_rank": 127
+    },
+    {
+      "item_id": "rat_128",
+      "cues": [
+        "end",
+        "line",
+        "lock"
+      ],
+      "solution": "dead",
+      "difficulty_pct_15s": null,
+      "norm_rank": 128
+    },
+    {
+      "item_id": "rat_129",
+      "cues": [
+        "control",
+        "place",
+        "rate"
+      ],
+      "solution": "birth",
+      "difficulty_pct_15s": null,
+      "norm_rank": 129
+    },
+    {
+      "item_id": "rat_130",
+      "cues": [
+        "lounge",
+        "hour",
+        "napkin"
+      ],
+      "solution": "cocktail",
+      "difficulty_pct_15s": null,
+      "norm_rank": 130
+    },
+    {
+      "item_id": "rat_131",
+      "cues": [
+        "artist",
+        "hatch",
+        "route"
+      ],
+      "solution": "escape",
+      "difficulty_pct_15s": null,
+      "norm_rank": 131
+    },
+    {
+      "item_id": "rat_132",
+      "cues": [
+        "pet",
+        "bottom",
+        "garden"
+      ],
+      "solution": "rock",
+      "difficulty_pct_15s": null,
+      "norm_rank": 132
+    },
+    {
+      "item_id": "rat_133",
+      "cues": [
+        "mate",
+        "shoes",
+        "total"
+      ],
+      "solution": "running",
+      "difficulty_pct_15s": null,
+      "norm_rank": 133
+    },
+    {
+      "item_id": "rat_134",
+      "cues": [
+        "self",
+        "attorney",
+        "spending"
+      ],
+      "solution": "defense",
+      "difficulty_pct_15s": null,
+      "norm_rank": 134
+    },
+    {
+      "item_id": "rat_135",
+      "cues": [
+        "board",
+        "blade",
+        "back"
+      ],
+      "solution": "switch",
+      "difficulty_pct_15s": null,
+      "norm_rank": 135
+    },
+    {
+      "item_id": "rat_136",
+      "cues": [
+        "land",
+        "hand",
+        "house"
+      ],
+      "solution": "farm",
+      "difficulty_pct_15s": null,
+      "norm_rank": 136
+    },
+    {
+      "item_id": "rat_137",
+      "cues": [
+        "hungry",
+        "order",
+        "belt"
+      ],
+      "solution": "money",
+      "difficulty_pct_15s": null,
+      "norm_rank": 137
+    },
+    {
+      "item_id": "rat_138",
+      "cues": [
+        "forward",
+        "flush",
+        "razor"
+      ],
+      "solution": "straight",
+      "difficulty_pct_15s": null,
+      "norm_rank": 138
+    },
+    {
+      "item_id": "rat_139",
+      "cues": [
+        "shadow",
+        "chart",
+        "drop"
+      ],
+      "solution": "eye",
+      "difficulty_pct_15s": null,
+      "norm_rank": 139
+    },
+    {
+      "item_id": "rat_140",
+      "cues": [
+        "way",
+        "ground",
+        "weather"
+      ],
+      "solution": "fair",
+      "difficulty_pct_15s": null,
+      "norm_rank": 140
+    },
+    {
+      "item_id": "rat_141",
+      "cues": [
+        "cast",
+        "slide",
+        "jump"
+      ],
+      "solution": "broad",
+      "difficulty_pct_15s": null,
+      "norm_rank": 141
+    },
+    {
+      "item_id": "rat_142",
+      "cues": [
+        "back",
+        "step",
+        "screen"
+      ],
+      "solution": "door",
+      "difficulty_pct_15s": null,
+      "norm_rank": 142
+    },
+    {
+      "item_id": "rat_143",
+      "cues": [
+        "reading",
+        "service",
+        "stick"
+      ],
+      "solution": "lip",
+      "difficulty_pct_15s": null,
+      "norm_rank": 143
+    },
+    {
+      "item_id": "rat_144",
+      "cues": [
+        "over",
+        "plant",
+        "horse"
+      ],
+      "solution": "power",
+      "difficulty_pct_15s": null,
+      "norm_rank": 144
+    }
+  ]
+}

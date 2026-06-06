@@ -1,0 +1,39 @@
+# DRAT random noun pool — one noun per line, '#' lines ignored.
+# Used OFFLINE only (scoring/score_drat.py), never shipped to the client.
+#
+# Purpose: for each anchor set A, the utility threshold tau_A is the 90th
+# percentile of {max_i cos(emb(p), emb(anchor_i)) : p in this pool}. A response
+# word survives only if its max-similarity to the anchors exceeds tau_A.
+#
+# Replace this small placeholder with your full pool (the DRAT paper uses a large
+# random-noun pool; a few hundred to a few thousand common nouns is typical).
+apple
+table
+river
+courage
+engine
+planet
+silence
+hammer
+garden
+melody
+shadow
+crystal
+bridge
+forest
+thunder
+pillow
+compass
+harvest
+lantern
+canyon
+feather
+marble
+orbit
+ribbon
+glacier
+ember
+meadow
+anchor
+prism
+willow
