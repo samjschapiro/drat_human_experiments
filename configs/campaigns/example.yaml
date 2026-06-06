@@ -1,0 +1,23 @@
+# Example campaign spec for factory.py.
+#
+# A "campaign" is a set of experiment instances that share the same template
+# but differ in their upstream data source (one variant per condition × model
+# × task, say). The factory clones template/ once per variant.
+#
+# Usage:
+#     python src/human_experiments/factory.py --campaign configs/campaigns/example.yaml
+
+campaign_root: src/human_experiments/instances/example
+
+variants:
+  - tag: model_a_task_x
+    upstream: data/runs/model_a/task_x/results.csv
+
+  - tag: model_b_task_x
+    upstream: data/runs/model_b/task_x/results.csv
+
+  - tag: model_a_task_y
+    upstream: data/runs/model_a/task_y/results.csv
+    # optional overrides (defaults set at top of prepare_stimuli.py):
+    seed: 123
+    n_per_condition: 30
