@@ -144,32 +144,51 @@ async function main() {
     const consent = {
         type: jsPsychHtmlButtonResponse,
         stimulus:
-            `<div style="text-align:left;max-width:760px;margin:0 auto">
-             <h2 style="text-align:center">Consent to Participate</h2>
-             <p><b>Purpose.</b> You are invited to take part in a research study on how
-                people generate ideas and solve word problems.</p>
-             <p><b>Procedure.</b> You will complete ${order.length} short thinking tasks
-                (about 15–20 minutes). Please work in one sitting and do not look
-                anything up.</p>
-             <p><b>Risks &amp; benefits.</b> There are no anticipated risks beyond those
-                of everyday computer use. Your participation helps advance research on
-                creativity and cognition.</p>
-             <p><b>Confidentiality.</b> Your responses are anonymous beyond your
-                crowd-platform ID and are stored securely. Data may be shared in
-                aggregated, de-identified form.</p>
-             <p><b>Voluntary participation.</b> Participation is voluntary; you may stop
-                at any time by closing the window.
-                <i>[Insert IRB protocol # and researcher contact before launch.]</i></p>
-             <p style="text-align:center;margin-top:18px">
-                <b>Do you consent to participate?</b></p>
-             </div>`,
+            `<div style="width: 800px; font-size: 16px; text-align: left; margin: 0 auto; padding: 20px 0;">
+                <div style="text-align: center; margin-bottom: 30px;">
+                    <h1 style="color: #333; font-size: 24px; margin-bottom: 10px;">Creativity and Cognition Study</h1>
+                    <p style="color: #666; font-size: 16px;">Research Consent Form</p>
+                </div>
+                <p>Dear Participant,</p>
+                <p>Thank you for your interest in our research! We are researchers interested in understanding how people generate ideas and solve creative thinking problems.</p>
+                <p><strong>Study Purpose:</strong> We are conducting research on creative and associative thinking — how people come up with diverse ideas, find connections between words, and reason about scientific problems. This helps us understand creativity and validate methods for measuring it.</p>
+                <p><strong>What You Will Do:</strong> You will complete a series of ${order.length} short thinking tasks. Depending on the task, you will type words that are as different from one another as possible, find a word that connects a group of words, or write brief responses to scientific-thinking scenarios. Some tasks are timed. The study takes approximately 15–20 minutes and is administered in person on this computer.</p>
+                <p><strong>Data We Collect:</strong> We will collect the following data during this study:
+                <br>• Your typed responses to each task
+                <br>• Timestamps and response times
+                <br>• Basic technical information (browser type, screen resolution)
+                <br>• A participant code assigned by the research team for data management
+                <br>We do NOT collect your name or any other personally identifiable information. The participant code is not linked to your identity.</p>
+                <p><strong>Data Use and Storage:</strong> Your data will be:
+                <br>• Stored securely on encrypted servers for up to 7 years for research purposes
+                <br>• Used to study creative thinking and to validate automated creativity-scoring methods
+                <br>• Potentially shared in anonymized form with other researchers or made publicly available for scientific transparency
+                <br>• Processed under legitimate research interest as permitted by applicable data-protection laws</p>
+                <p><strong>Your Rights:</strong> Your participation is completely voluntary. You may:
+                <br>• Refuse to participate without penalty
+                <br>• Withdraw from the study at any time by telling the researcher or closing this window
+                <br>• Request deletion of your data by contacting the research team with your participant code within 30 days of participation
+                <br>• Contact your local data protection authority with any concerns</p>
+                <p><strong>Risks and Benefits:</strong> There are no risks beyond those of normal computer use. Your participation contributes to research on understanding creativity. <em>[Compensation, if any, will be described to you by the research team.]</em></p>
+                <p><strong>Contact:</strong> For questions about this study, contact the research team: <em>[researcher name and email]</em>. For questions about your rights as a participant, contact the <em>[institutional review board / research ethics committee and contact]</em>.</p>
+                <p style="margin-top: 30px; padding: 20px; background: #f0f8ff; border-left: 4px solid #007bff;">
+                    <strong>Informed Consent Statement:</strong><br>
+                    I understand the information provided above about this research study. I understand:
+                    <br>• The purpose of the study and what I will be asked to do
+                    <br>• What data will be collected and how it will be used
+                    <br>• My rights including the ability to withdraw at any time
+                    <br>• How my data will be stored and potentially shared
+                    <br><br>
+                    I am 18 years of age or older and voluntarily agree to participate in this study.
+                </p>
+            </div>`,
         choices: ["I agree to participate", "I do not agree"],
         data: { battery_tag: "consent" },
         on_finish: (data) => {
             if (data.response === 1) {
                 jsPsych.endExperiment(
                     "<p style='padding:40px;text-align:center'>You have chosen not to " +
-                    "participate. You may now close this window.</p>"
+                    "participate. Please let the researcher know. You may now close this window.</p>"
                 );
             }
         },
