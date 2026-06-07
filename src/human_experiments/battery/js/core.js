@@ -12,10 +12,15 @@
  *   POST ${API}/submitData                  → { status, submission_id }
  */
 
-// =============== CONFIG (replaced at deploy time) ===============
-const API_BASE = "__API_BASE__";              // deploy.sh sed-substitutes this
-const COMPLETION_URL = "__COMPLETION_URL__";  // crowd platform completion redirect
-// =================================================================
+// =============== CONFIG ===============
+// Deployment values come from js/config.js (window.BATTERY_RUNTIME), which is
+// gitignored and written by deploy.sh / prepare_battery.py. The placeholders are
+// the "not configured" sentinels — real submissions fail loudly if left unset,
+// which is correct (debug mode, with no PROLIFIC_PID, never submits).
+const RUNTIME = window.BATTERY_RUNTIME || {};
+const API_BASE = RUNTIME.API_BASE || "__API_BASE__";
+const COMPLETION_URL = RUNTIME.COMPLETION_URL || "__COMPLETION_URL__";
+// ======================================
 
 let participantId = "";
 let participantSlot = -1;

@@ -1,0 +1,26 @@
+# Vercel deploys ONLY the static frontend: index.html, vercel.json, and js/.
+# Everything below is build-time, server-side, or contains answer keys — it must
+# never be uploaded to the public static site.
+
+# Answer keys & source item banks (RAT solutions, DRAT noun pool, etc.)
+item_banks/
+
+# Server-side code (Supabase/AWS) — deployed separately, not via Vercel
+backend/
+
+# Offline scoring pipeline
+scoring/
+
+# Build scripts, configs, docs
+*.py
+*.sh
+*.yaml
+*.yml
+*.md
+.gitignore
+
+# Local/runtime junk
+__pycache__/
+data/
+*.bak
+.DS_Store

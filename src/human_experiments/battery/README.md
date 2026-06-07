@@ -62,6 +62,42 @@ cd scoring && pip install -r requirements.txt
 python score_battery.py --input ../data/battery_raw.json --glove glove-wiki-gigaword-300
 ```
 
+## Deploying the frontend to Vercel
+
+The frontend is a static site (no build step). **Only `index.html`, `js/`, and
+`vercel.json` are deployed** — `.vercelignore` excludes `item_banks/` (RAT answer
+key!), `backend/`, `scoring/`, and all build scripts, so nothing sensitive is ever
+served publicly.
+
+Deployment config (`API_BASE`, `COMPLETION_URL`) lives in `js/config.js`
+(gitignored; `window.BATTERY_RUNTIME`). `prepare_battery.py` writes a placeholder
+stub; `deploy.sh` overwrites it with real values at deploy time, so the tracked
+`core.js` is never mutated.
+
+**Recommended (one command, backend + frontend):**
+
+```bash
+export COMPLETION_URL='https://app.prolific.com/submissions/complete?cc=XXXX'
+export TOTAL_SLOTS=160
+bash deploy.sh supabase      # deploys backend, writes js/config.js, runs `vercel --prod`
+```
+
+**Frontend only (manual), e.g. for a preview before the backend exists:**
+
+```bash
+python prepare_battery.py --config battery_config.example.yaml   # ensures js/config.js stub
+# (optional) cp js/config.example.js js/config.js and fill in real URLs
+vercel            # first run: link/create the project (root = this dir)
+vercel --prod     # promote to production
+```
+
+In local debug mode (no `PROLIFIC_PID`) the API is never called, so a frontend-only
+deploy is fully walkable; real submissions just need `API_BASE` set in `js/config.js`.
+
+> Project root: run `vercel` **from this `battery/` directory** (or set the Vercel
+> project's Root Directory to `src/human_experiments/battery`). The repo is a
+> monorepo, so deploying the whole repo root would be wrong.
+
 ## How it works
 
 - **Configurable inclusion / order.** `included_tests` decides which modules run;

@@ -41,6 +41,10 @@
          Must load before the test modules and core.js. -->
     <script src="js/battery-data.js"></script>
 
+    <!-- Deployment config: window.BATTERY_RUNTIME = { API_BASE, COMPLETION_URL }.
+         Gitignored; written by deploy.sh (or prepare_battery.py as a stub). -->
+    <script src="js/config.js"></script>
+
     <!-- Shared helpers + self-registering test modules (before core.js). -->
     <script src="js/countdown.js"></script>
     <script src="js/tests/dat.js"></script>

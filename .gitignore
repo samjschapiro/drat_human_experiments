@@ -62,6 +62,11 @@ Thumbs.db
 *.bin
 *.ckpt
 
+# Battery deployment runtime config (holds deployment-specific URLs; written by
+# deploy.sh / prepare_battery.py). Never commit — use js/config.example.js.
+src/human_experiments/battery/js/config.js
+src/human_experiments/battery/.vercel/
+
 # UV
 uv.lock
 

@@ -225,6 +225,21 @@ def main() -> None:
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(content)
 
+    # Ensure a runtime-config stub exists so index.html's <script src="js/config.js">
+    # resolves locally (no 404). deploy.sh overwrites it with real values; it is
+    # gitignored, so deployment URLs never get committed.
+    config_js = args.output.parent / "config.js"
+    if not config_js.exists():
+        config_js.write_text(
+            "// Auto-generated stub by prepare_battery.py — deploy.sh overwrites this.\n"
+            "// In local debug mode (no PROLIFIC_PID) these values are unused.\n"
+            "window.BATTERY_RUNTIME = "
+            + json.dumps({"API_BASE": "__API_BASE__",
+                          "COMPLETION_URL": "__COMPLETION_URL__"}, indent=2)
+            + ";\n"
+        )
+        print(f"Wrote {config_js} (placeholder stub)")
+
     print(f"Wrote {args.output}")
     print(f"  tests:        {included}")
     print(f"  orders:       {n_orders} ({spec.get('order_policy')})")
