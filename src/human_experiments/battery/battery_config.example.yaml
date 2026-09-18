@@ -9,7 +9,7 @@
 # (generate_series upper bound = TOTAL_SLOTS - 1) and as the TOTAL_SLOTS env var
 # on the get-slot function.
 
-battery_version: "1.0.0"
+battery_version: "1.1.0"
 
 # Which tests to include, and in what canonical (pre-counterbalance) order.
 # Drop any you don't want — the engine only runs what's listed here.
@@ -29,6 +29,10 @@ explicit_orders: []        # only used when order_policy == explicit
 # dropouts consume a slot without producing a submission).
 replications_per_cell: 5
 
+# Participant-facing wording (task intros, item prompts, worked examples) lives
+# in js/tests/<id>.js, and the bonus banner in js/core.js, mirroring the Kombine
+# study. It reads the parameters below, so change numbers here, not in the text.
+
 # Per-test parameters.
 tests:
   dat:
@@ -42,9 +46,9 @@ tests:
   sctt:
     item_bank: item_banks/sctt_beaty_2026.json
     n_responses_per_item: 3       # Beaty design fixes this at 3
-    time_limit_sec: null          # self-paced (null = no whole-test timer)
+    time_limit_sec: null          # per-scenario limit (null = self-paced)
   drat:
     anchor_bank: item_banks/drat_anchors.example.json
     n_words: 10
-    k_anchors: 4
+    k_anchors: 2                  # anchors shown per set (bank's k_anchors wins)
     time_limit_sec: 240

@@ -35,45 +35,11 @@ except ImportError:
 HERE = Path(__file__).parent
 
 
-# ── Default participant-facing instruction copy (override per-test in config) ──
-DEFAULT_INTRO = {
-    "dat": (
-        "<h2>Word Association</h2>"
-        "<p>Please enter <b>10 words</b> that are <b>as different from each other "
-        "as possible</b>, in all meanings and uses of the words.</p>"
-        "<p><b>Rules</b></p>"
-        "<ul style='text-align:left;display:inline-block'>"
-        "<li>Use only single words.</li>"
-        "<li>Use only nouns (e.g., things, objects, concepts).</li>"
-        "<li>No proper nouns (no specific people or places).</li>"
-        "<li>No specialised vocabulary (no technical terms).</li>"
-        "</ul>"
-        "<p>You have 4 minutes. Think of the words on your own — do not look them up.</p>"
-    ),
-    "rat": (
-        "<h2>Word Connections</h2>"
-        "<p>On each screen you will see <b>three words</b>. Type the <b>single word</b> "
-        "that connects all three — it forms a compound word or a common phrase with "
-        "each of them.</p>"
-        "<p>Example: <b>cottage&nbsp;/&nbsp;swiss&nbsp;/&nbsp;cake</b> &rarr; "
-        "<b>cheese</b> (cottage cheese, swiss cheese, cheesecake).</p>"
-        "<p>You have a few seconds per item. If you don't know, make your best guess "
-        "and move on.</p>"
-    ),
-    "sctt": (
-        "<h2>Scientific Thinking</h2>"
-        "<p>You will read a series of short scenarios. For each one, type "
-        "<b>three responses</b> in the boxes provided. Be as creative as you can — "
-        "there are no right or wrong answers.</p>"
-    ),
-    "drat": (
-        "<h2>Creative Word Generation</h2>"
-        "<p>You will see four <b>anchor words</b>. Enter <b>10 words</b> that are "
-        "<b>as different from each other as possible</b>, but where <b>each word can "
-        "be related — even metaphorically — to the anchor words</b>.</p>"
-        "<p>Use single-word nouns. You have 4 minutes.</p>"
-    ),
-}
+# Participant-facing copy (task intros, item prompts, worked examples, the bonus
+# banner) lives in the JS, mirroring the Kombine study: js/tests/<id>.js holds each
+# task's title / intro / example / prompt, js/core.js holds the bonus banner. This
+# script ships only runtime parameters (word counts, time limits, item banks).
+
 
 DEFAULT_TESTS = {
     "dat": {"n_words": 10, "time_limit_sec": 240},
@@ -82,7 +48,7 @@ DEFAULT_TESTS = {
     "sctt": {"item_bank": "item_banks/sctt_beaty_2026.json",
              "n_responses_per_item": 3, "time_limit_sec": None},
     "drat": {"anchor_bank": "item_banks/drat_anchors.example.json",
-             "n_words": 10, "k_anchors": 4, "time_limit_sec": 240},
+             "n_words": 10, "k_anchors": 2, "time_limit_sec": 240},
 }
 
 
@@ -95,7 +61,6 @@ def load_config(path: Path) -> dict:
 def merge_test_cfg(test_id: str, user_cfg: dict) -> dict:
     merged = dict(DEFAULT_TESTS.get(test_id, {}))
     merged.update(user_cfg or {})
-    merged.setdefault("intro_html", DEFAULT_INTRO.get(test_id, ""))
     return merged
 
 
@@ -167,7 +132,7 @@ def assemble_sctt(cfg: dict) -> list[dict]:
 def assemble_drat(cfg: dict) -> dict:
     bank = _read_json(HERE / cfg["anchor_bank"])
     return {
-        "k_anchors": bank.get("k_anchors", cfg.get("k_anchors", 4)),
+        "k_anchors": bank.get("k_anchors", cfg.get("k_anchors", 2)),
         "anchor_sets": [{"set_id": s["set_id"], "anchors": s["anchors"]}
                         for s in bank["anchor_sets"]],
     }

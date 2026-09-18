@@ -24,11 +24,11 @@ window.BATTERY_CONFIG = {
         // ...
     ],
     tests: {                          // per-test runtime params (no item-bank paths)
-        dat:  { n_words: 10, time_limit_sec: 240, intro_html: "..." },
+        dat:  { n_words: 10, time_limit_sec: 240 },
         rat:  { item_time_limit_sec: 15, n_items: 30, item_select: "easiest",
                 intro_html: "..." },
-        sctt: { n_responses_per_item: 3, time_limit_sec: null, intro_html: "..." },
-        drat: { n_words: 10, k_anchors: 4, time_limit_sec: 240, intro_html: "..." }
+        sctt: { n_responses_per_item: 3, time_limit_sec: null },
+        drat: { n_words: 10, k_anchors: 2, time_limit_sec: 240 }
     }
 };
 
@@ -47,9 +47,9 @@ window.ITEM_BANKS = {
     ],
     // DRAT: anchor sets; the participant gets one (indexed by anchorSetIndex).
     drat: {
-        k_anchors: 4,
+        k_anchors: 2,
         anchor_sets: [
-            { set_id: "drat_as_0", anchors: ["fire", "ice", "wind", "stone"] }
+            { set_id: "drat_as_0", anchors: ["fire", "ice"] }
             // ...
         ]
     },

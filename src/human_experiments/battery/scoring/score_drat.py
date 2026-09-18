@@ -96,7 +96,7 @@ def score_drat_composite(words, anchors, models: list, pool, **kw) -> dict:
 
 if __name__ == "__main__":
     rng = np.random.default_rng(1)
-    anchors = ["fire", "ice", "wind", "stone"]
+    anchors = ["fire", "ice"]
     words = ["ember", "glacier", "storm", "boulder", "ash", "frost", "gale"]
     pool = ["table", "river", "engine", "planet", "silence", "marble", "orbit", "ribbon"]
     vocab = set(anchors + words + pool)

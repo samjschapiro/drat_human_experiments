@@ -7,6 +7,12 @@
  * anchor set, runs each enabled test module's sub-timeline in order, and POSTs
  * one JSON-per-session with the raw responses. Scoring is offline.
  *
+ * Page format mirrors the Kombine generation study: consent (with the bonus
+ * banner) -> per task, an intro page (title, banner, "In this task…" paragraph,
+ * worked example, "Next: N prompts") then its items ("Item i of N" + progress
+ * bar, task eyebrow, stimuli chips, instruction paragraph ending in the nudge,
+ * the form, a collapsible worked example) -> "Thank you!" completion.
+ *
  * Backend endpoints — set at deploy time by deploy.sh, or hand-edit:
  *   GET  ${API}/getSlot?PROLIFIC_PID=...   → { slot, total_slots, status }
  *   POST ${API}/submitData                  → { status, submission_id }
@@ -21,6 +27,13 @@ const RUNTIME = window.BATTERY_RUNTIME || {};
 const API_BASE = RUNTIME.API_BASE || "__API_BASE__";
 const COMPLETION_URL = RUNTIME.COMPLETION_URL || "__COMPLETION_URL__";
 // ======================================
+
+// Bonus banner — top of the consent form and on every task intro, as in Kombine.
+// Fill in the bracketed amount (and how "overall score" is computed) before launch.
+const BONUS_BANNER = `<p style="margin: 0 0 24px; padding: 16px 20px; background: #fff6e0; border: 1px solid #e8c85a; border-left: 5px solid #e0a800; border-radius: 6px; font-size: 16px;">
+    <strong>🏆 Bonus:</strong> The highest scores earn extra pay. If your overall score across the tasks is the
+    <strong>highest of all participants</strong>, you will receive an <strong>additional [$X] bonus</strong>.
+    So take your time and do your best on every task.</p>`;
 
 let participantId = "";
 let participantSlot = -1;
@@ -66,8 +79,12 @@ async function submitData(payload) {
     return res.json();
 }
 
+function displayTarget() {
+    return document.getElementById("jspsych-target") || document.body;
+}
+
 function fatal(msg) {
-    document.body.innerHTML =
+    displayTarget().innerHTML =
         `<p style="padding:40px;text-align:center">${msg}</p>`;
     throw new Error(msg);
 }
@@ -86,7 +103,134 @@ function pruneResponse(v) {
     if (v.prompt !== undefined) out.prompt = v.prompt;  // SCTT
     if (v.set_id !== undefined) out.set_id = v.set_id;  // DRAT
     if (v.anchors !== undefined) out.anchors = v.anchors;
+    if (v.debug_skipped) out.debug_skipped = true;
     return out;
+}
+
+// ---------------- shared page furniture (Kombine format) ----------------
+// Item numbering runs across the whole battery ("Item 7 of 44"); the total is
+// only known once every module has been built, so item html is a function that
+// reads it at trial time.
+const progress = { total: 0 };
+
+function esc(s) {
+    return (s == null ? "" : String(s)).replace(/&/g, "&amp;").replace(/"/g, "&quot;")
+        .replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function header(index) {
+    const pct = ((index + 1) / progress.total) * 100;
+    return `<div class="kb-progress">Item ${index + 1} of ${progress.total}</div>
+    <div style="height:3px;background:#e0dde6;border-radius:2px;margin:6px 0 18px;">
+      <div style="width:${pct}%;height:100%;background:#007bff;border-radius:2px;"></div></div>`;
+}
+
+// Stimuli as chips: chips(["fire","ice"], "&") → [fire] & [ice]. Classes cycle a/b
+// unless overridden (["solo"] for a neutral set).
+function chips(words, tween, classes) {
+    const cls = classes || ["a", "b"];
+    return `<div class="kb-pair">` +
+        words.map((w, i) => `<span class="kb-chip ${cls[i % cls.length]}">${esc(w)}</span>`)
+             .join(`<span class="kb-tween">${tween}</span>`) +
+        `</div>`;
+}
+
+// Numbered single-word boxes; with `values`, a read-only filled-in example.
+function wordGrid(n, values, readonly) {
+    let h = `<div class="kb-words">`;
+    for (let i = 0; i < n; i++) {
+        const v = values && values[i] !== undefined ? ` value="${esc(values[i])}"` : "";
+        h += `<div class="w"><span class="tnum">${i + 1}</span>` +
+             `<input type="text" name="w${i}" autocomplete="off" spellcheck="false"${v}` +
+             `${readonly ? " readonly" : ""}></div>`;
+    }
+    return h + `</div>`;
+}
+
+// Readonly example cells and typed answers auto-size to their content, so nothing
+// is clipped (Kombine does the same for its analogy/blend cells).
+function growCells(root) {
+    (root || document).querySelectorAll("textarea").forEach((el) => {
+        el.style.height = "auto";
+        el.style.height = el.scrollHeight + "px";
+    });
+}
+
+// The worked example lives in a collapsed <details>: its cells have no height until
+// it is opened, so size them on toggle. Also grow any textarea as it is typed into.
+function wireCells() {
+    document.querySelectorAll("details.kb-example").forEach((d) =>
+        d.addEventListener("toggle", () => growCells(d)));
+    document.querySelectorAll("textarea").forEach((t) =>
+        t.addEventListener("input", () => {
+            t.style.height = "auto"; t.style.height = t.scrollHeight + "px";
+        }));
+    growCells();
+}
+
+// A task whose instruction is self-explanatory can omit example(); nothing is drawn.
+function exampleBlock(html) {
+    if (!html) return "";
+    return `<details class="kb-example"><summary>See a worked example</summary>
+    <div class="body">${html}</div></details>`;
+}
+
+function wrap(inner, width) {
+    return `<div style="text-align:left; max-width:${width || 660}px; margin:0 auto;">${inner}</div>`;
+}
+
+function duration(sec) {
+    if (sec % 60 === 0) { const m = sec / 60; return `${m} minute${m === 1 ? "" : "s"}`; }
+    return `${sec} seconds`;
+}
+
+// One short clause on the time limit, for the end of an intro paragraph.
+function timing(sec, per) {
+    if (!sec) return "There is no time limit.";
+    const scope = per ? ` for each ${per}` : "";
+    return `You have <b>${duration(sec)}</b>${scope}; when the clock runs out, whatever you ` +
+           `have typed is sent.`;
+}
+
+// The description for a task, shown immediately before that task's block of items.
+function createTaskIntro(mod, cfg, ctx, n) {
+    const noun = mod.eyebrow;
+    return {
+        type: jsPsychInstructions,
+        show_clickable_nav: true,
+        button_label_next: `Start the ${noun} prompts`,
+        pages: [
+            `<div style="max-width:720px;margin:0 auto;text-align:left;"><h3 style="color:${mod.color}">${mod.title}</h3>
+        ${BONUS_BANNER}
+        <p>${mod.intro(cfg, ctx)}</p>
+        ${mod.example ? `<div style="color:#666;margin-top:8px;">${mod.example(cfg, ctx)}</div>` : ""}
+        <p style="margin-top:16px;color:#888;font-size:14px;">Next: ${n} ${noun} ${n === 1 ? "prompt" : "prompts"}.</p></div>`,
+        ],
+        data: { battery_tag: "intro", test: mod.id },
+        on_load: () => growCells(),
+    };
+}
+
+/* ------------------------------------------------------------ debug skipping */
+// In debug mode (no PROLIFIC_PID) a small bar lets you skip the current page, or the
+// rest of the current task's items, without filling anything in. Skipped trials are
+// recorded with debug_skipped: true. Ported from the Kombine study.
+let currentTask = null;
+const debugSkipTask = {};
+
+function createDebugBar() {
+    const bar = document.createElement("div");
+    bar.className = "kb-debugbar";
+    bar.innerHTML = `<span>DEBUG</span>` +
+        `<button type="button" id="dbgSkipItem">Skip this page</button>` +
+        `<button type="button" id="dbgSkipTask">Skip rest of task</button>`;
+    document.body.appendChild(bar);
+    const finish = () => jsPsych.finishTrial({ response: {}, debug_skipped: true });
+    bar.querySelector("#dbgSkipItem").addEventListener("click", finish);
+    bar.querySelector("#dbgSkipTask").addEventListener("click", () => {
+        if (currentTask) debugSkipTask[currentTask] = true;
+        finish();
+    });
 }
 
 async function main() {
@@ -100,8 +244,6 @@ async function main() {
     if (!prolificPid) {
         isDebugMode = true;
         participantId = `debug_${Date.now()}`;
-        const banner = document.getElementById("debug-banner");
-        if (banner) banner.style.display = "block";
         participantSlot = 0; // deterministic in debug
     } else {
         participantId = prolificPid;
@@ -119,13 +261,14 @@ async function main() {
     // Validate every ordered test has a registered module.
     const modules = window.BATTERY_MODULES || {};
     for (const testId of order) {
-        if (!modules[testId] || typeof modules[testId].buildTimeline !== "function") {
+        const m = modules[testId];
+        if (!m || typeof m.buildTrials !== "function" || typeof m.intro !== "function") {
             fatal(`Error: no registered module for test "${testId}". ` +
                   `Check the tests/*.js script tags in index.html.`);
         }
     }
 
-    jsPsych = initJsPsych();
+    jsPsych = initJsPsych({ display_element: "jspsych-target" });
 
     const ctx = {
         jsPsych,
@@ -136,6 +279,10 @@ async function main() {
         anchorSetIndex,
         seededShuffle,
         makeCountdown: window.makeCountdown,
+        // page furniture
+        esc, header, chips, wordGrid, exampleBlock, wrap, duration, timing,
+        growCells, wireCells,
+        itemStart: 0,
     };
 
     // Informed consent — the first screen. The participant must explicitly agree
@@ -149,6 +296,7 @@ async function main() {
                     <h1 style="color: #333; font-size: 24px; margin-bottom: 10px;">Creativity and Cognition Study</h1>
                     <p style="color: #666; font-size: 16px;">Research Consent Form</p>
                 </div>
+                ${BONUS_BANNER}
                 <p>Dear Participant,</p>
                 <p>Thank you for your interest in our research! We are researchers interested in understanding how people generate ideas and solve creative thinking problems.</p>
                 <p><strong>Study Purpose:</strong> We are conducting research on creative and associative thinking — how people come up with diverse ideas, find connections between words, and reason about scientific problems. This helps us understand creativity and validate methods for measuring it.</p>
@@ -194,19 +342,42 @@ async function main() {
         },
     };
 
-    // Per-test sub-timelines, in counterbalanced order.
+    // Per-test blocks in counterbalanced order: each task's intro appears right
+    // before its own items, and item numbers run across the whole battery.
     const testTrials = [];
     for (const testId of order) {
+        const mod = modules[testId];
         const cfg = (config.tests && config.tests[testId]) || {};
-        const tctx = { ...ctx, itemBank: (window.ITEM_BANKS || {})[testId] || null };
-        testTrials.push(...modules[testId].buildTimeline(cfg, tctx));
+        const tctx = { ...ctx, itemBank: (window.ITEM_BANKS || {})[testId] || null,
+                       itemStart: progress.total };
+        const trials = mod.buildTrials(cfg, tctx);
+        const n = trials.filter((t) => t.data && t.data.battery_tag === "task").length;
+        progress.total += n;
+        testTrials.push(createTaskIntro(mod, cfg, tctx, n));
+        for (const trial of trials) {
+            // remember which task is on screen, so the debug bar's "skip rest of task"
+            // knows what to drop (the module keeps its own on_load).
+            const modLoad = trial.on_load;
+            trial.on_load = function () {
+                currentTask = testId;
+                if (modLoad) modLoad.apply(this, arguments);
+            };
+            // wrapped so "skip rest of task" (debug) can drop the block's remaining items
+            testTrials.push(isDebugMode
+                ? { timeline: [trial], conditional_function: () => !debugSkipTask[testId] }
+                : trial);
+        }
     }
 
-    const debrief = {
+    const completion = {
         type: jsPsychHtmlButtonResponse,
-        stimulus: isDebugMode
-            ? "<h2>Debug complete</h2><p>Data NOT submitted. See console for payload.</p>"
-            : "<h2>Thank you!</h2><p>Submitting your responses…</p>",
+        stimulus: () =>
+            `<div style="max-width:600px;margin:0 auto;text-align:center;"><h1>Thank you!</h1>
+      <p>You've completed all ${progress.total} prompts.</p>` +
+            (isDebugMode
+                ? `<p><strong>Debug mode:</strong> nothing is submitted; your data is logged to the console.</p>`
+                : `<p>Click below to submit your responses.</p>`) +
+            `</div>`,
         choices: ["Finish"],
         on_finish: async () => {
             const payload = {
@@ -236,20 +407,27 @@ async function main() {
                 window.location.href = COMPLETION_URL;
             } catch (err) {
                 console.error("submitData failed", err);
-                document.body.innerHTML =
-                    `<p style="padding:40px">Submission failed. Please email the ` +
-                    `researchers with this code: <code>${participantId}</code>.</p>`;
+                displayTarget().innerHTML =
+                    `<div style="padding:40px;max-width:700px;margin:0 auto;font-size:16px">` +
+                    `<h2>Your answers could not be saved</h2>` +
+                    `<p>Something went wrong when sending your answers. Please do not ` +
+                    `close this window. Tell the researcher, or email ` +
+                    `<em>[researcher email]</em>, and give them this code:</p>` +
+                    `<p style="font-size:22px"><code>${participantId}</code></p></div>`;
             }
         },
     };
 
-    jsPsych.run([consent, ...testTrials, debrief]);
+    if (isDebugMode) createDebugBar();
+
+    jsPsych.run([consent, ...testTrials, completion]);
 }
 
 main().catch((err) => {
     console.error("Battery failed to start", err);
-    if (!document.body.innerHTML.includes("padding:40px")) {
-        document.body.innerHTML =
+    const target = document.getElementById("jspsych-target") || document.body;
+    if (!target.innerHTML.includes("padding:40px")) {
+        target.innerHTML =
             `<p style="padding:40px">Study failed to start. Please try again. ` +
             `(${err.message})</p>`;
     }

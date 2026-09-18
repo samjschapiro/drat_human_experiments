@@ -1,14 +1,14 @@
 {
-  "source": "DRAT anchor sets — supplied by the experimenter. Schapiro, Gladstone, Black & Ji (2026), arXiv:2605.13450. Each participant is assigned ONE anchor set (by slot; see core.js). The participant generates n_words nouns that are (a) maximally different from each other AND (b) each metaphorically relatable to the k anchor words shown.",
-  "k_anchors": 4,
+  "source": "DRAT anchor sets — supplied by the experimenter. Schapiro, Gladstone, Black & Ji (2026), arXiv:2605.13450. Each participant is assigned ONE anchor set (by slot; see core.js). The participant generates n_words nouns that are (a) maximally different from each other AND (b) each relatable — even loosely or figuratively — to the k anchor words shown. Two anchors per set: participants are asked to connect each word to both, with a clear connection to one accepted as a fallback (the scorer keeps a word if its closest anchor clears the utility threshold).",
+  "k_anchors": 2,
   "anchor_sets": [
-    { "set_id": "drat_as_0", "anchors": ["fire", "ice", "wind", "stone"] },
-    { "set_id": "drat_as_1", "anchors": ["river", "mountain", "desert", "forest"] },
-    { "set_id": "drat_as_2", "anchors": ["clock", "mirror", "bridge", "key"] },
-    { "set_id": "drat_as_3", "anchors": ["seed", "engine", "thread", "spark"] },
-    { "set_id": "drat_as_4", "anchors": ["ocean", "star", "root", "shadow"] },
-    { "set_id": "drat_as_5", "anchors": ["wall", "door", "window", "ladder"] },
-    { "set_id": "drat_as_6", "anchors": ["honey", "salt", "smoke", "glass"] },
-    { "set_id": "drat_as_7", "anchors": ["wheel", "anchor", "compass", "lantern"] }
+    { "set_id": "drat_as_0", "anchors": ["fire", "ice"] },
+    { "set_id": "drat_as_1", "anchors": ["mountain", "desert"] },
+    { "set_id": "drat_as_2", "anchors": ["mirror", "key"] },
+    { "set_id": "drat_as_3", "anchors": ["seed", "engine"] },
+    { "set_id": "drat_as_4", "anchors": ["ocean", "star"] },
+    { "set_id": "drat_as_5", "anchors": ["door", "ladder"] },
+    { "set_id": "drat_as_6", "anchors": ["honey", "smoke"] },
+    { "set_id": "drat_as_7", "anchors": ["wheel", "lantern"] }
   ]
 }

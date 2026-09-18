@@ -52,8 +52,8 @@ window.makeCountdown = function (seconds, opts) {
 
     return {
         html() {
-            return `<div id="${ID}" style="font-weight:600;font-size:15px;` +
-                   `margin-bottom:12px;text-align:center"></div>`;
+            return `<div id="${ID}" class="kb-timer" style="` +
+                   `text-align:right"></div>`;
         },
         start() {
             remaining = seconds;

@@ -12,7 +12,7 @@ takes the included tests in a **counterbalanced order**; **scoring is offline**
 | **DAT** | type 10 maximally-different nouns (4 min) | none | mean pairwise embedding distance (Olson et al. 2021) |
 | **RAT** | 3 cues → 1 connecting word, per item | Bowden & Jung-Beeman 144 CRA | accuracy |
 | **SCTT** | 12 scenarios × 3 free-text responses | Beaty et al. 2026 (OSF 439zs) | fine-tuned RoBERTa creativity score |
-| **DRAT** | 10 diverse nouns, each relatable to k anchors | your anchor sets + noun pool | utility-threshold + distance (Schapiro et al. 2026) |
+| **DRAT** | 10 diverse nouns, each relatable to the k (default 2) anchors | your anchor sets + noun pool | utility-threshold + distance (Schapiro et al. 2026) |
 
 ## Layout
 
@@ -117,6 +117,37 @@ deploy is fully walkable; real submissions just need `API_BASE` set in `js/confi
 
 See `DESIGN_NOTES.md` for the *why* behind these choices, and `../DESIGN_NOTES.md`
 for the shared backend rationale.
+
+## Participant-facing wording and page format
+
+The battery follows the **Kombine generation study** (`schapiro.ai/kombine`) page for
+page, so the two studies read and look the same:
+
+- **Consent** with the 🏆 **bonus banner** at the top (`BONUS_BANNER` in `js/core.js`;
+  fill in the bracketed amount and decide how "overall score" is computed — task
+  scores are on different scales).
+- **Per task, an intro page** shown right before that task's items: colored title
+  ("Different Words Task"), the bonus banner, one "In this task, we will …" paragraph
+  (what to do, the word rules, how it is scored, the time limit), a worked example,
+  and "Next: N prompts."
+- **Each item**: "Item i of N" with a progress bar (numbered across the whole battery),
+  the task eyebrow, the stimuli as chips, one short instruction line with the stimuli in
+  bold, the form, and a collapsible "See a worked example".
+- **Completion**: "Thank you! You've completed all N prompts."
+- **Debug bar** (no `PROLIFIC_PID` only): a fixed bar with **Skip this page** and **Skip
+  rest of task**, as in Kombine. Skipped trials are recorded with `debug_skipped: true`.
+
+Keep the copy tight: each task is explained once, on its intro page, and the item screen
+only restates what to type. Rules, scoring and the time limit are stated once each, in
+the intro paragraph, and not repeated on the items.
+
+Participants see the tasks as **Different Words** (DAT), **Word Connections** (RAT),
+**Science Ideas** (SCTT) and **Connected but Different** (DRAT). All wording lives in
+`js/tests/<id>.js` (`title`, `eyebrow`, `color`, `rules`, `intro()`, `example()`, and
+the prompt inside `buildTrials()`), parameterised by the config, so change numbers in
+the YAML and prose in the module. DRAT defaults to **2 anchor words**: participants are
+told to connect each word to both, with a clear connection to just one accepted as a
+fallback; the text adapts to the bank's `k_anchors`.
 
 ## Adding or modifying a test
 
