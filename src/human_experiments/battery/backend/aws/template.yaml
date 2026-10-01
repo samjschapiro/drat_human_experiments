@@ -45,7 +45,7 @@ Resources:
           Type: Api
           Properties:
             RestApiId: !Ref ExperimentAPI
-            Path: /submitData
+            Path: /submit-data
             Method: POST
 
   GetDataFunction:
@@ -61,7 +61,7 @@ Resources:
           Type: Api
           Properties:
             RestApiId: !Ref ExperimentAPI
-            Path: /getData
+            Path: /get-data
             Method: GET
 
   GetSlotFunction:
@@ -80,13 +80,13 @@ Resources:
           Type: Api
           Properties:
             RestApiId: !Ref ExperimentAPI
-            Path: /getSlot
+            Path: /get-slot
             Method: GET
         GetSlotPostAPI:
           Type: Api
           Properties:
             RestApiId: !Ref ExperimentAPI
-            Path: /getSlot
+            Path: /get-slot
             Method: POST
 
   ExperimentAPI:
@@ -103,10 +103,10 @@ Outputs:
     Description: API Gateway endpoint URL
     Value: !Sub 'https://${ExperimentAPI}.execute-api.${AWS::Region}.amazonaws.com/prod'
   DataSubmissionURL:
-    Value: !Sub 'https://${ExperimentAPI}.execute-api.${AWS::Region}.amazonaws.com/prod/submitData'
+    Value: !Sub 'https://${ExperimentAPI}.execute-api.${AWS::Region}.amazonaws.com/prod/submit-data'
   DataRetrievalURL:
-    Value: !Sub 'https://${ExperimentAPI}.execute-api.${AWS::Region}.amazonaws.com/prod/getData'
+    Value: !Sub 'https://${ExperimentAPI}.execute-api.${AWS::Region}.amazonaws.com/prod/get-data'
   SlotAssignmentURL:
-    Value: !Sub 'https://${ExperimentAPI}.execute-api.${AWS::Region}.amazonaws.com/prod/getSlot'
+    Value: !Sub 'https://${ExperimentAPI}.execute-api.${AWS::Region}.amazonaws.com/prod/get-slot'
   S3BucketName:
     Value: !Ref ExperimentDataBucket

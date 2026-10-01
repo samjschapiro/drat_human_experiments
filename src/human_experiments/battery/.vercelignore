@@ -1,0 +1,8 @@
+# Allowlist: only the files the browser needs are uploaded to Vercel.
+# Everything else in battery/ would otherwise be publicly downloadable,
+# including item_banks/rat_cra_144.json (the RAT answer key), scoring code,
+# backend source and configs.
+/*
+!/index.html
+!/js
+!/vercel.json

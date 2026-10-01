@@ -1,0 +1,23 @@
+# Supabase CLI project config for the battery backend.
+#
+# The CLI's project root is battery/backend/ (it looks for ./supabase/ there);
+# deploy.sh runs from that directory. Everything not set here uses CLI defaults.
+
+project_id = "drat-battery"
+
+[db]
+major_version = 17
+
+# Participant-facing functions are called by the browser without a Supabase
+# session, so the gateway must not demand a JWT. They talk to Postgres with the
+# service-role key, which never leaves the function.
+[functions.get-slot]
+verify_jwt = false
+
+[functions.submit-data]
+verify_jwt = false
+
+# get-data checks its own bearer token (DATA_EXPORT_TOKEN secret) inside the
+# function; see functions/get-data/index.ts.
+[functions.get-data]
+verify_jwt = false

@@ -29,7 +29,8 @@ battery/
 ├── battery_config.example.yaml ← which tests, order policy, per-test params
 ├── item_banks/                 ← RAT 144 CRA, SCTT items, DRAT anchors + noun pool
 ├── backend/                    ← Supabase / AWS (copied from template, get-data adapted)
-├── deploy.sh · get_data.sh · vercel.json
+├── js/deploy-config.js         ← API_BASE + COMPLETION_URL (written by deploy.sh)
+├── deploy.sh · get_data.sh · vercel.json · .vercelignore (upload allowlist)
 └── scoring/                    ← offline pipeline (see scoring/README.md)
 ```
 
@@ -44,19 +45,22 @@ $EDITOR item_banks/drat_noun_pool.example.txt  # → save as drat_noun_pool.txt
 # 2. Generate the client bundle. Note the printed TOTAL_SLOTS.
 python prepare_battery.py --config battery_config.example.yaml
 
-# 3. Set TOTAL_SLOTS in backend/supabase/schema.sql (generate_series upper bound
-#    = TOTAL_SLOTS - 1) and export it, then deploy backend + frontend.
+# 3. TOTAL_SLOTS must match the generate_series bound in
+#    backend/supabase/migrations/*_init.sql (upper bound = TOTAL_SLOTS - 1).
+#    Then deploy backend + frontend (one-time: `npx supabase login`, `vercel login`).
 export COMPLETION_URL='https://app.prolific.com/submissions/complete?cc=XXXX'
 export TOTAL_SLOTS=160
-bash deploy.sh supabase
+export SUPABASE_PROJECT_REF=<ref>                 # from the Supabase dashboard URL
+export DATA_EXPORT_TOKEN=$(openssl rand -hex 32)  # save it (password manager); never commit
+bash deploy.sh supabase   # migrations, secrets, functions, writes js/deploy-config.js, vercel --prod
 
-# 4. Test locally first: open index.html with no PROLIFIC_PID → debug mode
-#    (slot 0, no submission; the payload is logged to the console).
+# 4. Test locally first: `python3 -m http.server` in this folder, open it with
+#    no PROLIFIC_PID → debug mode (slot 0, no submission; payload logged to console).
 
 # 5. Recruit on Prolific with:
 #    https://<deploy>.vercel.app?PROLIFIC_PID={{%PROLIFIC_PID%}}&STUDY_ID={{%STUDY_ID%}}&SESSION_ID={{%SESSION_ID%}}
 
-# 6. Collect + score
+# 6. Collect + score (needs SUPABASE_PROJECT_REF + DATA_EXPORT_TOKEN in env)
 bash get_data.sh supabase
 cd scoring && pip install -r requirements.txt
 python score_battery.py --input ../data/battery_raw.json --glove glove-wiki-gigaword-300

@@ -6,8 +6,6 @@
 --                  the lowest-numbered unclaimed row and assigns it.
 --   submissions  : append-only. One row per completed session.
 
-create extension if not exists "uuid-ossp";
-
 -- ────────────────────────────────────────────────────────────────────────
 -- slots: one row per slot, pre-seeded
 -- ────────────────────────────────────────────────────────────────────────
@@ -32,13 +30,14 @@ on conflict (id) do nothing;
 -- submissions: one row per completed session
 -- ────────────────────────────────────────────────────────────────────────
 create table if not exists submissions (
-    id              uuid primary key default uuid_generate_v4(),
+    id              uuid primary key default gen_random_uuid(),
     participant_id  text not null,
     slot            integer references slots(id),
     payload         jsonb not null,
     submitted_at    timestamptz not null default now(),
-    user_agent      text,
-    source_ip       text
+    user_agent      text
+    -- No source IP column: the IRB protocol forbids storing anything that
+    -- could identify a participant beyond their study code.
 );
 
 create index if not exists submissions_participant_idx on submissions (participant_id);
@@ -89,3 +88,9 @@ $$;
 alter table slots        enable row level security;
 alter table submissions  enable row level security;
 -- No policies = no public access. Service role bypasses RLS.
+
+-- Supabase exposes public-schema functions over its REST API (/rest/v1/rpc/),
+-- and Postgres grants EXECUTE to PUBLIC by default. Without this, anyone with
+-- the project's publishable key could call claim_slot directly and drain slots.
+revoke execute on function claim_slot(text) from public, anon, authenticated;
+grant  execute on function claim_slot(text) to service_role;

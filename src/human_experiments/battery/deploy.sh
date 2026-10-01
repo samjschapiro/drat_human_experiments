@@ -1,25 +1,28 @@
 #!/bin/bash
-# Deploy the battery: backend (AWS or Supabase) + frontend (Vercel) +
-# sed-substitute API_BASE / COMPLETION_URL into js/core.js.
+# Deploy the battery: backend (Supabase or AWS) + frontend (Vercel), writing the
+# resulting API base URL into js/deploy-config.js.
 #
 # Before deploying:
 #   1. python prepare_battery.py --config battery_config.example.yaml
-#      → note the printed TOTAL_SLOTS, set it in backend/supabase/schema.sql
-#        (generate_series upper bound = TOTAL_SLOTS - 1) and export it below.
-#   2. export COMPLETION_URL='https://app.prolific.com/submissions/complete?cc=XXXX'
-#   3. export TOTAL_SLOTS=160   # must match schema + bundle
+#      → note the printed TOTAL_SLOTS; it must match the slots seeded in
+#        backend/supabase/migrations/*_init.sql (backend deploy checks this).
+#   2. export TOTAL_SLOTS=160
+#      export COMPLETION_URL='https://...'        # where participants go after submitting
+#   3. Supabase only:
+#      export SUPABASE_PROJECT_REF=<ref>
+#      export DATA_EXPORT_TOKEN=<openssl rand -hex 32>   # keep out of git
 #
 # Usage:
-#   bash deploy.sh supabase   # uses backend/supabase (recommended)
-#   bash deploy.sh aws        # uses backend/aws
+#   bash deploy.sh supabase   # recommended
+#   bash deploy.sh aws
 
-set -e
+set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
-BACKEND="${1:-supabase}"
+BACKEND="${1:?Usage: $0 supabase|aws}"
 EXPERIMENT_NAME=$(basename "$SCRIPT_DIR")
-COMPLETION_URL="${COMPLETION_URL:-https://app.prolific.com/submissions/complete}"
+: "${COMPLETION_URL:?Set COMPLETION_URL (where participants are sent after submitting)}"
 
 if [ ! -f js/battery-data.js ]; then
     echo "ERROR: js/battery-data.js missing. Run prepare_battery.py first."
@@ -43,11 +46,9 @@ case "$BACKEND" in
         cd "$SCRIPT_DIR"
         ;;
     supabase)
-        echo "Reminder: set the get-slot TOTAL_SLOTS secret to match your bundle:"
-        echo "  npx supabase secrets set TOTAL_SLOTS=${TOTAL_SLOTS:-160}"
-        bash backend/supabase/deploy.sh
-        echo ""
-        read -p "Paste the Supabase functions base URL (https://<ref>.supabase.co/functions/v1): " API_BASE
+        : "${SUPABASE_PROJECT_REF:?Set SUPABASE_PROJECT_REF}"
+        bash backend/supabase/deploy.sh "$SUPABASE_PROJECT_REF"
+        API_BASE="https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1"
         ;;
     *)
         echo "Unknown backend: $BACKEND. Use 'aws' or 'supabase'."
@@ -61,18 +62,31 @@ if [ -z "$API_BASE" ]; then
 fi
 
 echo ""
-echo "Patching js/core.js (API_BASE, COMPLETION_URL)"
-sed -i.bak \
-    -e "s|const API_BASE = '__API_BASE__';|const API_BASE = '$API_BASE';|" \
-    -e "s|const COMPLETION_URL = '__COMPLETION_URL__';|const COMPLETION_URL = '$COMPLETION_URL';|" \
-    js/core.js
-rm -f js/core.js.bak
+echo "Writing js/deploy-config.js"
+cat > js/deploy-config.js <<EOF
+/*
+ * Deployment settings, written by deploy.sh (or edited by hand). Committed on
+ * purpose: nothing here is secret — the browser has to know the API URL anyway.
+ * Keys that grant data access (service role, DATA_EXPORT_TOKEN) never go here.
+ *
+ *   API_BASE        e.g. "https://<project-ref>.supabase.co/functions/v1"
+ *   COMPLETION_URL  where to send the participant after a successful submit
+ *
+ * Leave API_BASE empty to run only in debug mode (no PROLIFIC_PID in the URL);
+ * core.js refuses to start a real session while it is empty.
+ */
+window.DEPLOY_CONFIG = {
+    API_BASE: "$API_BASE",
+    COMPLETION_URL: "$COMPLETION_URL",
+};
+EOF
 
-if ! command -v vercel >/dev/null 2>&1; then
-    echo "Vercel CLI not found. Install: npm install -g vercel ; then: vercel --prod"
-    exit 0
-fi
-FRONTEND_URL=$(vercel --prod --yes 2>/dev/null | tail -n1)
+command -v vercel >/dev/null 2>&1 || {
+    echo "Vercel CLI not found. Install: npm install -g vercel ; then re-run, or: vercel --prod"
+    exit 1
+}
+# .vercelignore limits the upload to index.html + js/ (keeps the RAT answer key private).
+FRONTEND_URL=$(vercel --prod --yes | tail -n1)
 
 echo ""
 echo "================================================"
@@ -81,6 +95,7 @@ echo "  Backend:  $BACKEND"
 echo "  API base: $API_BASE"
 echo "  Frontend: $FRONTEND_URL"
 echo ""
-echo "Study URL for Prolific:"
-echo "  ${FRONTEND_URL}?PROLIFIC_PID={{%PROLIFIC_PID%}}&STUDY_ID={{%STUDY_ID%}}&SESSION_ID={{%SESSION_ID%}}"
+echo "Study URL:"
+echo "  ${FRONTEND_URL}?PROLIFIC_PID=<participant id>"
+echo "Commit js/deploy-config.js so the deployed settings are recorded."
 echo "================================================"

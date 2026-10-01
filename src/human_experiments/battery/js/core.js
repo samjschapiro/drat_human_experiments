@@ -7,15 +7,13 @@
  * anchor set, runs each enabled test module's sub-timeline in order, and POSTs
  * one JSON-per-session with the raw responses. Scoring is offline.
  *
- * Backend endpoints — set at deploy time by deploy.sh, or hand-edit:
- *   GET  ${API}/getSlot?PROLIFIC_PID=...   → { slot, total_slots, status }
- *   POST ${API}/submitData                  → { status, submission_id }
+ * Backend endpoints (API_BASE comes from js/deploy-config.js):
+ *   GET  ${API}/get-slot?PROLIFIC_PID=...   → { slot, total_slots, status }
+ *   POST ${API}/submit-data                  → { status, submission_id }
  */
 
-// =============== CONFIG (replaced at deploy time) ===============
-const API_BASE = "__API_BASE__";              // deploy.sh sed-substitutes this
-const COMPLETION_URL = "__COMPLETION_URL__";  // crowd platform completion redirect
-// =================================================================
+const API_BASE = (window.DEPLOY_CONFIG || {}).API_BASE || "";
+const COMPLETION_URL = (window.DEPLOY_CONFIG || {}).COMPLETION_URL || "";
 
 let participantId = "";
 let participantSlot = -1;
@@ -46,13 +44,13 @@ function seededShuffle(array, seed) {
 }
 
 async function fetchSlot(pid) {
-    const res = await fetch(`${API_BASE}/getSlot?PROLIFIC_PID=${encodeURIComponent(pid)}`);
+    const res = await fetch(`${API_BASE}/get-slot?PROLIFIC_PID=${encodeURIComponent(pid)}`);
     if (!res.ok) throw new Error(`getSlot returned ${res.status}`);
     return res.json();
 }
 
 async function submitData(payload) {
-    const res = await fetch(`${API_BASE}/submitData`, {
+    const res = await fetch(`${API_BASE}/submit-data`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -99,6 +97,10 @@ async function main() {
         if (banner) banner.style.display = "block";
         participantSlot = 0; // deterministic in debug
     } else {
+        if (!API_BASE || !COMPLETION_URL) {
+            fatal("Error: js/deploy-config.js is missing API_BASE or COMPLETION_URL. " +
+                  "Run deploy.sh or fill it in before running a real session.");
+        }
         participantId = prolificPid;
         const slotResponse = await fetchSlot(participantId);
         participantSlot = slotResponse.slot;
