@@ -11,6 +11,9 @@
 #   3. Supabase only:
 #      export SUPABASE_PROJECT_REF=<ref>
 #      export DATA_EXPORT_TOKEN=<openssl rand -hex 32>   # keep out of git
+#      export SUPABASE_ACCESS_TOKEN=<personal access token>  # or `npx supabase login`
+#      export SUPABASE_DB_PASSWORD=<database password>       # avoids the db push prompt
+#   4. Optional: export VERCEL_TOKEN=<token>                # or `vercel login`
 #
 # Usage:
 #   bash deploy.sh supabase   # recommended
@@ -81,12 +84,9 @@ window.DEPLOY_CONFIG = {
 };
 EOF
 
-command -v vercel >/dev/null 2>&1 || {
-    echo "Vercel CLI not found. Install: npm install -g vercel ; then re-run, or: vercel --prod"
-    exit 1
-}
 # .vercelignore limits the upload to index.html + js/ (keeps the RAT answer key private).
-FRONTEND_URL=$(vercel --prod --yes | tail -n1)
+# VERCEL_TOKEN (optional) authenticates non-interactively; otherwise `vercel login` first.
+FRONTEND_URL=$(npx -y vercel --prod --yes ${VERCEL_TOKEN:+--token "$VERCEL_TOKEN"} | tail -n1)
 
 echo ""
 echo "================================================"
