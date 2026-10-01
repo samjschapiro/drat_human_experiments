@@ -86,7 +86,10 @@ EOF
 
 # .vercelignore limits the upload to index.html + js/ (keeps the RAT answer key private).
 # VERCEL_TOKEN (optional) authenticates non-interactively; otherwise `vercel login` first.
-FRONTEND_URL=$(npx -y vercel --prod --yes ${VERCEL_TOKEN:+--token "$VERCEL_TOKEN"} | tail -n1)
+VERCEL_OUT=$(npx -y vercel --prod --yes ${VERCEL_TOKEN:+--token "$VERCEL_TOKEN"} 2>&1 | tee /dev/stderr)
+# Prefer the stable production alias ("Aliased https://...") over the per-deploy URL.
+FRONTEND_URL=$(echo "$VERCEL_OUT" | grep -Eo 'Aliased +https://[^ ]+' | grep -Eo 'https://[^ ]+' | tail -n1)
+[ -n "$FRONTEND_URL" ] || FRONTEND_URL="(not found in Vercel output; see above)"
 
 echo ""
 echo "================================================"

@@ -10,6 +10,6 @@
  * core.js refuses to start a real session while it is empty.
  */
 window.DEPLOY_CONFIG = {
-    API_BASE: "",
-    COMPLETION_URL: "",
+    API_BASE: "https://lvrspzwomnsxyoxptjlh.supabase.co/functions/v1",
+    COMPLETION_URL: "https://example.com/done",
 };
