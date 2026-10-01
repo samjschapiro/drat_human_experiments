@@ -12,6 +12,7 @@
  *   POST ${API}/submit-data                  → { status, submission_id }
  */
 
+const DEPLOY_ENV = (window.DEPLOY_CONFIG || {}).ENV || "";  // "dev" | "prod" | "" (local)
 const API_BASE = (window.DEPLOY_CONFIG || {}).API_BASE || "";
 const COMPLETION_URL = (window.DEPLOY_CONFIG || {}).COMPLETION_URL || "";
 
@@ -93,10 +94,13 @@ async function main() {
     if (!prolificPid) {
         isDebugMode = true;
         participantId = `debug_${Date.now()}`;
-        const banner = document.getElementById("debug-banner");
-        if (banner) banner.style.display = "block";
+        document.body.dataset.banner =
+            "DEBUG MODE — no PROLIFIC_PID in the URL; nothing is saved.";
         participantSlot = 0; // deterministic in debug
     } else {
+        if (DEPLOY_ENV === "dev") {
+            document.body.dataset.banner = "DEV ENVIRONMENT — test data only, not for participants.";
+        }
         if (!API_BASE || !COMPLETION_URL) {
             fatal("Error: js/deploy-config.js is missing API_BASE or COMPLETION_URL. " +
                   "Run deploy.sh or fill it in before running a real session.");

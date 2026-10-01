@@ -1,15 +1,14 @@
 /*
- * Deployment settings, written by deploy.sh (or edited by hand). Committed on
- * purpose: nothing here is secret — the browser has to know the API URL anyway.
- * Keys that grant data access (service role, DATA_EXPORT_TOKEN) never go here.
+ * Deployment settings. This committed copy is intentionally EMPTY: it is what
+ * you get when opening index.html locally, which only runs in debug mode.
+ * deploy.sh writes a filled-in copy (ENV, API_BASE, COMPLETION_URL) into the
+ * per-environment staging folder .deploy/drat-<env>/ — never into this file.
  *
- *   API_BASE        e.g. "https://<project-ref>.supabase.co/functions/v1"
- *   COMPLETION_URL  where to send the participant after a successful submit
- *
- * Leave API_BASE empty to run only in debug mode (no PROLIFIC_PID in the URL);
- * core.js refuses to start a real session while it is empty.
+ * Nothing here is secret (the browser has to know the API URL anyway). Keys
+ * that grant data access (service role, DATA_EXPORT_TOKEN) never go here.
  */
 window.DEPLOY_CONFIG = {
-    API_BASE: "https://lvrspzwomnsxyoxptjlh.supabase.co/functions/v1",
-    COMPLETION_URL: "https://example.com/done",
+    ENV: "",
+    API_BASE: "",
+    COMPLETION_URL: "",
 };

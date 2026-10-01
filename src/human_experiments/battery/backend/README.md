@@ -40,11 +40,15 @@ Files: `supabase/config.toml`, `supabase/migrations/*_init.sql`, `supabase/funct
 
 **Prerequisites:** Supabase project (free tier OK), `npx supabase login` once (no install needed).
 
-**Deploy:**
+**Deploy:** normally via `../deploy.sh dev|prod`, which loads the right env file and
+calls `supabase/deploy.sh` for you. Standalone:
 ```bash
-export TOTAL_SLOTS=160 DATA_EXPORT_TOKEN=$(openssl rand -hex 32)
+export SUPABASE_ACCESS_TOKEN=... SUPABASE_DB_PASSWORD=... TOTAL_SLOTS=160 DATA_EXPORT_TOKEN=...
 bash supabase/deploy.sh <your-project-ref>
 ```
+
+`../deploy.sh` only drives Supabase; the AWS backend (Option A) is kept for reference
+and must be deployed by hand with `sam`.
 
 **Access model:** all three functions are deployed without the gateway JWT check (`config.toml`), because participants have no Supabase session. `get-slot` / `submit-data` are intentionally public; `get-data` checks the `DATA_EXPORT_TOKEN` secret itself. Tables have RLS on with no policies, and `claim_slot()` is not executable by the `anon`/`authenticated` roles, so the publishable key can't read data or claim slots directly. No IP addresses are stored.
 
