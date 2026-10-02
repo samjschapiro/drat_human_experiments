@@ -33,8 +33,8 @@ unmodified copy of `main`.
 | `95c6119` | Implemented the local two-session study flow, generated DRAT assignments, incremental capture, questionnaires, Raven handoff, and linked-session export |
 | `c9ace09` | Enforced the Session 1 prerequisite, completed DRAT/SCTT administration and scoring integration, validated supplied data, and documented deployment requirements |
 
-Both commits are on `feature/drat-study-flow`. They have not been pushed, merged, or
-deployed.
+Both implementation commits are included on the review branch
+`prit/drat-study-flow`. They have not been merged or deployed.
 
 ## Resulting participant flow
 
@@ -287,7 +287,9 @@ process rather than duplicating it inside this app.
 
 - Production Supabase integration and deployment; this belongs to the deployment
   workstream.
-- Final Q-global URL and automated Q-global score retrieval.
+- Final Q-global URL, examinee-ID mapping, approved launch/return and recovery
+  workflow, real export normalization, and any separately approved automated
+  Q-global integration.
 - Participant-facing consent/screening pages already handled by the approved
   operational workflow.
 - Final DRAT numeric research scoring without the missing approved pool/embeddings.
@@ -297,7 +299,7 @@ process rather than duplicating it inside this app.
 ## Local reproduction
 
 ```bash
-cd /Users/pritmhala/Computer_Graphics_HW1/Babak_AI3_Project/src/human_experiments/battery
+cd src/human_experiments/battery
 python3 -m http.server 8001
 ```
 

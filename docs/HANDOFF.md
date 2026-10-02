@@ -6,13 +6,14 @@ Detailed handoffs:
 
 - `docs/WASIQ_DEPLOYMENT_HANDOFF.md` — production integration and deployment.
 - `docs/STUDY_FLOW_IMPLEMENTATION.md` — complete implementation record.
+- `docs/BABAK_QUESTIONNAIRE.md` — supervisor decisions and supplied-material blockers.
 
 ## Current state
 
-- Work is isolated in `/Users/pritmhala/Computer_Graphics_HW1/Babak_AI3_Project`
-  on branch `feature/drat-study-flow`, based on Wasiq's deployment changes.
-- The original checkout at `/Users/pritmhala/Babak_AI3_Project` is untouched.
-- Nothing from this branch has been pushed, merged, or deployed.
+- Work is isolated on branch `prit/drat-study-flow`, based on Wasiq's deployment
+  changes. The repository's `main` branch remains unchanged.
+- The review branch is published separately for collaboration; nothing has been
+  merged or deployed.
 - The app is a local-only two-session prototype. Production mode fails loudly.
 
 ## Implemented
@@ -58,12 +59,13 @@ the local browser gate is not a security boundary.
 
 ## Required decisions before deployment
 
-Babak must confirm the study-code issuance rule, the Q-global URL and return
-workflow, consent placement, final participant wording, and supply/confirm the
-exact DRAT random-noun pool and embedding files. Wasiq must
-connect and test `/save-block`, export both sessions, update the slot migration,
-and run the dev deployment. The study team must approve an end-to-end dev pilot
-before any participant launch.
+Babak must confirm the study-code issuance rule, Q-global URL, examinee-ID mapping,
+launch/return and recovery workflow, standardized-score export field, consent
+placement, final participant wording, and supply/confirm the exact DRAT random-noun
+pool and embedding files. Wasiq must implement and test the server-side session/event
+contract, protected export, 260-slot migration, and dev deployment. Prit must connect
+the participant frontend to that agreed contract and verify the scoring/export flow.
+The study team must approve an end-to-end dev pilot before any participant launch.
 
 ## Supplied-material coverage
 
@@ -79,7 +81,7 @@ before any participant launch.
 ## Local run
 
 ```bash
-cd /Users/pritmhala/Computer_Graphics_HW1/Babak_AI3_Project/src/human_experiments/battery
+cd src/human_experiments/battery
 python3 -m http.server 8001
 ```
 

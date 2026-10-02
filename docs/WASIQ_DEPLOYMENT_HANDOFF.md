@@ -17,15 +17,16 @@ listed below are complete.
 
 | Item | Value |
 |---|---|
-| Working directory | `/Users/pritmhala/Computer_Graphics_HW1/Babak_AI3_Project` |
-| Feature branch | `feature/drat-study-flow` |
-| Deployment base | `a17ad14` (`origin/pr-2-deployment`) |
+| Repository | `https://github.com/samjschapiro/drat_human_experiments` |
+| Review branch | `prit/drat-study-flow` |
+| Branch URL | `https://github.com/samjschapiro/drat_human_experiments/tree/prit/drat-study-flow` |
+| Deployment base | `a17ad14` (`origin/deploy-fixes`) |
 | Study-flow commit | `95c6119` — local two-session flow |
 | Completion commit | `c9ace09` — Session 2 gate and scoring pipeline |
 | Upstream main | `9f1f4fa` (`origin/main`) |
 
-Nothing from the feature branch has been pushed, merged, or deployed. The original
-checkout at `/Users/pritmhala/Babak_AI3_Project` was not changed.
+The review branch is separate from `main`. Nothing from it has been merged or
+deployed, and production remains deliberately locked.
 
 ## What is already working
 
@@ -40,6 +41,34 @@ checkout at `/Users/pritmhala/Babak_AI3_Project` was not changed.
 - A client transport that can send unsynced events to `POST /save-block` once that
   endpoint exists.
 - Offline linked-session export and scoring.
+
+## Pearson Q-global / Raven boundary
+
+Raven is not implemented inside Thinking Tasks. Pearson Q-global is the licensed
+external administration and scoring system. The intended direction is:
+
+```text
+Thinking Tasks handoff -> Q-global administration and scoring
+                       -> research-team score export
+                       -> offline merge by deidentified study code
+```
+
+The review branch currently supplies only an HTTPS-link handoff, a return screen,
+two auditable events (`raven_handoff` and `raven_return`), and an offline importer for
+an already-normalized CSV with `study_code,standardized_score`.
+
+It does not authenticate to Q-global, provision an examinee, pass an identifier,
+verify completion, retrieve scores, or understand Pearson's native export schema.
+The current participant can also advance without proving that the Q-global link was
+opened; `raven_return` must not be treated as verified Pearson completion. Pearson
+credentials, licensed test content, and the private study key must never enter the
+browser or repository.
+
+Before wiring Raven for dev, obtain the decisions and sample export listed in
+`docs/BABAK_QUESTIONNAIRE.md`. Unless Babak explicitly requires and documents an
+approved automated Pearson integration, the minimal supported production workflow
+is a supervised external handoff followed by a manual deidentified score export and
+offline merge.
 
 ## Current production blockers
 
@@ -60,6 +89,16 @@ The following are hard blockers, not optional refinements:
    record must contain neither user-agent nor source IP.
 8. `js/study-config.js` has `localPreviewOnly: true`, and `js/core.js` deliberately
    rejects a configured API and all production runs.
+9. The relationship between the Thinking Tasks study code and Q-global examinee ID
+   is not confirmed.
+10. Pearson's real deidentified score-export columns and standardized-score field
+    have not been supplied, so the generic CSV importer is not yet a verified
+    Q-global adapter.
+11. The deployment scripts still deploy the inherited `get-slot` / `submit-data`
+    functions and print a Prolific-style test URL. They do not yet deploy the new
+    session/event endpoints.
+12. The start/resume contract does not yet define approved study-code authorization
+    or return the server-side event inventory needed to resume on another device.
 
 ## Recommended production data flow
 
@@ -68,7 +107,8 @@ Participant enters deidentified study code and session number
         |
         v
 start/resume endpoint
-  - Session 1: claim or return one stable slot
+  - validate an issued study code through the approved access mechanism
+  - Session 1: claim or return one stable slot and saved-item inventory
   - Session 2: require completed Session 1 and reuse its slot
         |
         v
@@ -114,10 +154,13 @@ Response:
 
 ```json
 {
+  "protocol_version": "drat-human-2026-v1",
   "session_record_id": "uuid",
-  "session_token": "opaque-short-lived-or-rotatable-token",
+  "session_token": "opaque-rotatable-token",
   "slot": 17,
   "session_number": 1,
+  "test_order": ["dat", "rat", "raven"],
+  "saved_item_ids": [],
   "complete": false
 }
 ```
@@ -126,14 +169,21 @@ Required behavior:
 
 - Normalize and validate the study code using the same 3–32 character rule as the
   frontend: uppercase letters, digits, and hyphens only.
+- Accept only a pre-issued study code or the alternative access mechanism approved
+  by Babak. A syntactically valid arbitrary code must not consume a slot.
 - Session 1 atomically claims the lowest available slot or returns the previously
   assigned slot for that study code.
 - Session 2 returns the Session 1 slot only when Session 1 is complete; otherwise it
   returns a clear 409/403 error.
 - Repeated calls return the same session record and slot.
+- Return the assigned test order and server-saved item IDs so refreshes and a second
+  approved browser/device can resume without repeating completed tasks.
 - Never accept a client-provided slot as authoritative.
 - Issue an opaque session token (or equivalent approved session credential) that
   subsequent save/finish calls can use. Store only a hash server-side.
+- Token reissuance/resume must follow the approved researcher, station-passcode, or
+  equivalent recovery procedure; knowing a predictable study code alone is not
+  sufficient authorization.
 
 ### Save one event
 
@@ -146,7 +196,7 @@ The current payload is produced in `js/save-client.js`:
   "protocol_version": "drat-human-2026-v1",
   "study_code": "DRAT-001",
   "session_number": 2,
-  "session_record_id": "uuid-or-initial-local-id",
+  "session_record_id": "uuid",
   "event_id": "DRAT-001:2:slot_017_causal_k3",
   "test_id": "drat",
   "block_id": "slot_017_causal_k3",
@@ -166,7 +216,7 @@ The current payload is produced in `js/save-client.js`:
   "response_time_ms": 12345,
   "timed_out": false,
   "attention_check": null,
-  "app_version": "local-study-prototype"
+  "app_version": "approved-deployment-version"
 }
 ```
 
@@ -178,6 +228,8 @@ Required behavior:
 - Authenticate the request to the session established from the study code. Do not
   trust the payload's slot or session number without checking the stored session.
   The recommended browser contract is `Authorization: Bearer <session_token>`.
+- Validate the protocol version, required fields, expected test/item ID for that
+  session, and a reasonable request-size limit before storing the event.
 - Make `event_id` unique and idempotent. Replaying an identical event succeeds
   without creating a second row.
 - Reject a conflicting replay of the same `event_id` rather than overwriting data.
@@ -190,7 +242,8 @@ Required behavior:
 
 Recommended endpoint: `POST /finish-session`
 
-The server should verify the stored event inventory before setting `complete=true`.
+The server should verify the exact expected item IDs—not only the total count—before
+setting `complete=true`.
 Expected recordable events are:
 
 - Session 1: 35 events — DAT 1, RAT 30, Raven 2, BFI-10 1, demographics 1.
@@ -211,6 +264,11 @@ Keep `DATA_EXPORT_TOKEN` server-side. A failed or missing token must remain 401.
 
 Use a new migration for the already-deployed dev project; do not edit history and
 assume the modified old migration will rerun.
+
+If Babak confirms a pre-generated code list, store only the approved deidentified
+codes in an allowlist table or equivalent server-side registry. The private mapping
+from study code to participant identity remains outside this application and
+database.
 
 ### `slots`
 
@@ -254,21 +312,31 @@ functions use the service-role key; that key must never enter frontend files.
 
 1. Replace URL/default slot selection in `js/core.js` with the server response from
    the start/resume operation.
-2. Pass the server-issued `session_record_id` into `createStudyStore` rather than
+2. Hydrate the client with the returned test order and `saved_item_ids` so it can
+   resume from server state, including on an approved second browser/device.
+3. Pass the server-issued `session_record_id` into `createStudyStore` rather than
    beginning with a `local-*` identifier in production.
-3. Send the server-issued session token with save and completion requests; never
+4. Send the server-issued session token with save and completion requests; never
    put a service-role key or researcher export token in the browser.
-4. Extend `save-client.js` so `finish()` calls the completion endpoint and only
+5. Extend `save-client.js` so `finish()` calls the completion endpoint and only
    reports success after the server confirms completion.
-5. On page load, retry locally queued unsynced events before allowing the participant
+6. On page load, retry locally queued unsynced events before allowing the participant
    to continue.
-6. Keep the local assignment/order mismatch guard.
-7. Change participant-facing text in `study-code.js` from “local preview” after the
+7. Keep the local assignment/order mismatch guard.
+8. Change participant-facing text in `study-code.js` from “local preview” after the
    final wording is approved.
-8. Supply the approved HTTPS Q-global link in `study-config.js`.
-9. Only after dev integration passes, set `localPreviewOnly` to false and replace the
+9. Supply the approved HTTPS Q-global link in `study-config.js`.
+10. Implement only the approved identifier handoff. Do not place a participant name,
+    email, Pearson credential, or study-key file in frontend configuration or event
+    payloads.
+11. Preserve `raven_handoff` and `raven_return` in the production export. Treat the
+    participant's return response as self-report, not proof of Q-global completion.
+12. After receiving a sample Pearson export, add the smallest explicit normalization
+    step needed to produce `study_code,standardized_score`; fail on missing,
+    duplicate, or unmapped identifiers.
+13. Only after dev integration passes, set `localPreviewOnly` to false and replace the
    unconditional production fatal guard with an explicit approved deployment flag.
-10. Update `app_version` from `local-study-prototype` to a deployable version identifier.
+14. Update `app_version` from `local-study-prototype` to a deployable version identifier.
 
 ## Existing deployment files to reuse
 
@@ -281,17 +349,26 @@ functions use the service-role key; that key must never enter frontend files.
 | `src/human_experiments/battery/js/deploy-config.js` | Empty committed local config; deployment generates the environment-specific copy |
 | `src/human_experiments/battery/get_data.sh` | Protected, timestamped data export |
 
-The deployment script currently derives `TOTAL_SLOTS` from `js/battery-data.js`.
-That bundle still says 160, so update the authoritative count to 260 and add a
-matching migration before running the deploy script.
+Before deployment:
+
+- Update `backend/supabase/deploy.sh` and `config.toml` to deploy/configure
+  `start-session`, `save-block`, and `finish-session`, plus the revised `get-data`.
+- Update `get_data.sh` for the new session/event export schema.
+- Retire or clearly exclude the inherited `get-slot` / `submit-data` endpoints from
+  this study flow.
+- Derive `TOTAL_SLOTS` from the generated `STUDY_MATERIALS.assignments` count (260),
+  not the obsolete `js/battery-data.js` value (160), and add a new migration that
+  seeds the missing slots without rewriting applied migration history.
+- Remove the inherited `PROLIFIC_PID` test URL. `COMPLETION_URL` is unused by the new
+  in-person flow and should be removed unless the study team approves a specific
+  post-session destination.
 
 ## Configuration names
 
 Do not commit values. The existing scripts expect these names:
 
 - Shared deployment credentials: `SUPABASE_API_KEY`, `VERCEL_API_KEY`.
-- Per environment: `SUPABASE_PROJECT_REF`, `DB_PASSWORD`, `DATA_EXPORT_TOKEN`,
-  `COMPLETION_URL`.
+- Per environment: `SUPABASE_PROJECT_REF`, `DB_PASSWORD`, `DATA_EXPORT_TOKEN`.
 - Supabase function/runtime: `TOTAL_SLOTS` plus automatically provided Supabase URL
   and service-role credentials.
 
@@ -304,6 +381,8 @@ resetting or wiping production.
 - Do not request or store names or email addresses.
 - Do not store source IP, user-agent, browser fingerprint, or unnecessary client
   metadata.
+- Confirm Supabase/Vercel request-log retention with the study team if the IRB rule
+  applies beyond research database rows and exports.
 - Keep RAT answer keys, scoring code, database functions, and source materials out
   of the Vercel public artifact.
 - Keep RLS enabled and revoke direct public execution of slot-claiming functions.
@@ -317,13 +396,26 @@ resetting or wiping production.
 Complete all checks against dev before any production deployment:
 
 - [ ] A new study code gets one slot in `0..259`; repeated entry returns the same slot.
+- [ ] An unknown/unissued study code is rejected without consuming a slot.
 - [ ] A second browser/device can resume using the same study code.
+- [ ] Start/resume returns the server-saved item inventory and the browser skips those
+      completed items without trusting local storage.
 - [ ] Session 2 is rejected before Session 1 is complete.
 - [ ] Session 2 inherits Session 1's slot and cannot submit a different slot.
 - [ ] Refresh after a saved task resumes at the next task.
 - [ ] Retrying a block does not create a duplicate event.
 - [ ] A conflicting duplicate `event_id` is rejected and logged.
 - [ ] Session 1 finishes with 35 stored events.
+- [ ] Every Raven position in the six Session 1 orders reaches the approved Q-global
+      handoff and resumes at the correct next task.
+- [ ] The production export contains exactly one `raven_handoff` and one
+      `raven_return` event per completed Session 1.
+- [ ] The approved study-code/Q-global-examinee-ID mapping works without sending a
+      name, email, or other direct identifier to the experiment database.
+- [ ] A deidentified Q-global sample export is normalized and merged without missing
+      or duplicate study codes.
+- [ ] An interrupted or incomplete Q-global administration follows Babak's approved
+      recovery procedure and is not falsely marked complete.
 - [ ] Session 2 finishes with 22 stored events.
 - [ ] All eight DRAT cells and all 12 SCTT items appear in the export.
 - [ ] Timed-out trials preserve partial responses and `timed_out=true`.
@@ -340,7 +432,15 @@ Complete all checks against dev before any production deployment:
 Babak/the study team must provide or approve:
 
 - Study-code issuance and format.
-- Final Q-global/Raven URL and the return workflow.
+- Final Q-global/Raven URL; embed, new-tab, or researcher-launch behavior; and the
+  return/recovery workflow.
+- Whether the Q-global examinee ID is the Thinking Tasks study code or a separate
+  identifier, and who creates/records it.
+- A deidentified Q-global export sample and the exact standardized-score field to
+  retain.
+- Whether score export/merge is intentionally manual or an approved Pearson API
+  integration is required.
+- Q-global station sign-in and simultaneous-administration procedure.
 - Consent placement and final participant-facing wording.
 - Whether a station passcode, PBEL network restriction, or researcher authentication
   is required.
@@ -354,9 +454,17 @@ not silently change the experimental assignment logic.
 
 | Owner | Responsibility |
 |---|---|
-| Prit | Participant flow, test implementation, assignment generation, local scoring, and clarification of the event contract |
-| Wasiq | Supabase schema/functions, server-authoritative session gating, frontend/backend wiring, Vercel/Supabase dev deployment, export, and deployment QA |
-| Babak/study team | Study codes, Raven/Q-global, consent/copy, scoring resources, and launch approval |
+| Prit | Participant flow, test implementation, assignment generation, client-side integration in `core.js` / `save-client.js`, local scoring, and study-flow QA |
+| Wasiq | Supabase schema/functions, server-side session authorization and gating, tokens/secrets, Vercel/Supabase dev deployment, protected export, and deployment QA |
+| Shared | Final API contract, frontend/backend integration test, privacy verification, and supervised end-to-end dev pilot |
+| Babak/study team | Study codes; Q-global URL, license/account workflow, identifier mapping, score export, and recovery procedure; consent/copy; scoring resources; and launch approval |
+
+## Reproducibility note
+
+The committed `js/study-materials.js` already contains the 260 validated assignments
+and should be deployed as-is. Regenerating it is not a deployment step. If regeneration
+is required, `prepare_study_materials.py` needs Python `openpyxl`; declare/install that
+dependency explicitly and verify that regeneration reproduces the committed bundle.
 
 ## Definition of deployment done
 
