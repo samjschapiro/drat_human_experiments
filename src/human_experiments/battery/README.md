@@ -33,8 +33,9 @@ python score_battery.py \
   --input /path/to/drat-local-session-1.json /path/to/drat-local-session-2.json
 ```
 
-Add `--glove ...` when the approved embedding model is available. Production
-connection and remaining approval gates are tracked in
+This produces raw audit outputs plus RAT/BFI/SCTT-fluency scores. Add the explicit
+GloVe/FastText/SBERT and approved random-noun-pool arguments documented in
+`scoring/README.md` for final DAT/DRAT scores. Production connection and remaining approval gates are tracked in
 [`docs/HANDOFF.md`](../../../docs/HANDOFF.md).
 
 A configurable, **within-subjects** battery of four creativity/cognition tests,

@@ -21,15 +21,16 @@ import numpy as np
 
 from _embed import cosine_dist, cosine_sim, in_vocab, normalize_word
 
-POOL_PATH = Path(__file__).parent.parent / "item_banks" / "drat_noun_pool.example.txt"
-
-
-def load_pool(path: Path = POOL_PATH) -> list[str]:
+def load_pool(path: Path) -> list[str]:
     words = []
     for line in Path(path).read_text().splitlines():
         line = line.strip()
         if line and not line.startswith("#"):
             words.append(line.lower())
+    if not words:
+        raise ValueError(f"DRAT noun pool is empty: {path}")
+    if len(words) != len(set(words)):
+        raise ValueError(f"DRAT noun pool contains duplicate entries: {path}")
     return words
 
 

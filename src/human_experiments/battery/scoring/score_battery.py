@@ -1,8 +1,8 @@
 """Score linked two-session study exports, preserving one row per DRAT block.
 
 Accepts a single local-preview download, a list of session downloads, or the
-Supabase get-data wrapper. DAT/DRAT scores require --glove; raw condition and
-completion fields are still exported without an embedding model.
+Supabase get-data wrapper. DAT/DRAT scores require explicit embedding and noun-pool
+resources; raw condition and completion fields are exported without them.
 """
 
 from __future__ import annotations
@@ -12,6 +12,7 @@ from collections import defaultdict
 import csv
 import json
 from pathlib import Path
+import re
 from statistics import mean
 
 import score_dat
@@ -106,7 +107,25 @@ def load_raven_scores(path: Path | None) -> dict[str, str]:
         return scores
 
 
-def score_participants(sessions: list[dict], model, pool: list[str], raven_scores: dict[str, str]):
+def load_sctt_scores(path: Path | None) -> dict[tuple[str, str, str], dict]:
+    if path is None:
+        return {}
+    with path.open(newline="", encoding="utf-8-sig") as file:
+        reader = csv.DictReader(file)
+        required = {"participant_id", "item_id", "response_index", "prediction"}
+        if not required <= set(reader.fieldnames or []):
+            raise ValueError(f"SCTT score CSV must contain: {', '.join(sorted(required))}")
+        scores = {}
+        for row in reader:
+            key = (row["participant_id"], row["item_id"], row["response_index"])
+            if key in scores:
+                raise ValueError(f"Duplicate SCTT score row: {key}")
+            scores[key] = row
+        return scores
+
+
+def score_participants(sessions: list[dict], models: list[tuple[str, object]], pool: list[str],
+                       raven_scores: dict[str, str], sctt_scores: dict[tuple[str, str, str], dict]):
     grouped_sessions: dict[str, dict[int, dict]] = defaultdict(dict)
     for session in sessions:
         code = session.get("study_code") or session.get("participant_id")
@@ -146,10 +165,17 @@ def score_participants(sessions: list[dict], model, pool: list[str], raven_score
             "raven_standardized_score": raven_scores.get(code),
             "drat_n_blocks": len(s2.get("drat", [])),
         }
-        if s1.get("dat") and model:
+        if s1.get("dat") and models:
             words = score_dat.extract_words(s1["dat"][0].get("response") or {})
-            result = score_dat.score_dat(words, model)
-            row.update({key: value for key, value in result.items() if key != "valid_words"})
+            scores = []
+            for label, model in models:
+                result = score_dat.score_dat(words, model)
+                suffix = re.sub(r"[^a-z0-9]+", "_", label.lower()).strip("_")
+                row[f"dat_score_{suffix}"] = result["dat_score"]
+                row[f"dat_n_valid_{suffix}"] = result["n_valid"]
+                if result["dat_score"] is not None:
+                    scores.append(result["dat_score"])
+            row["dat_score"] = round(mean(scores), 2) if scores else None
         if s1.get("rat"):
             result = score_rat(s1["rat"], rat_key)
             row.update({key: value for key, value in result.items() if key != "rat_per_item"})
@@ -178,20 +204,41 @@ def score_participants(sessions: list[dict], model, pool: list[str], raven_score
                 "timed_out": response.get("timed_out"),
                 "n_responses": len(score_drat.extract_words(response.get("response") or {})),
             }
-            if model:
+            model_scores = []
+            for label, model in models:
                 result = score_drat.score_drat(
                     score_drat.extract_words(response.get("response") or {}),
                     response.get("anchors") or [], model, pool,
                 )
-                block.update({key: value for key, value in result.items() if key != "survivors"})
+                suffix = re.sub(r"[^a-z0-9]+", "_", label.lower()).strip("_")
+                for key in ("drat_score", "n_survivors", "threshold"):
+                    block[f"{key}_{suffix}"] = result[key]
                 if result["drat_score"] is not None:
-                    scored_blocks.append(result["drat_score"])
+                    model_scores.append(result["drat_score"])
+            block["drat_score"] = round(mean(model_scores), 2) if model_scores else None
+            if block["drat_score"] is not None:
+                scored_blocks.append(block["drat_score"])
             drat_rows.append(block)
         row["drat_mean_score"] = round(mean(scored_blocks), 2) if scored_blocks else None
 
         if s2.get("sctt"):
             row.update(score_sctt.fluency(s2["sctt"]))
-            sctt_rows.extend(score_sctt.flatten_responses(code, s2["sctt"]))
+            participant_sctt = score_sctt.flatten_responses(code, s2["sctt"])
+            predictions = []
+            for response in participant_sctt:
+                key = (code, response["item_id"], response["response_index"])
+                scored = sctt_scores.get(key)
+                if scored:
+                    if scored.get("response", response["response"]) != response["response"]:
+                        raise ValueError(f"SCTT score response mismatch for {key}")
+                    response["prediction"] = scored["prediction"]
+                    response["modelname"] = scored.get("modelname", "")
+                    if scored["prediction"] != "":
+                        predictions.append(float(scored["prediction"]))
+                elif sctt_scores and response["response"]:
+                    raise ValueError(f"Missing SCTT prediction for {key}")
+            row["sctt_creativity_mean"] = round(mean(predictions), 4) if predictions else None
+            sctt_rows.extend(participant_sctt)
         summary_rows.append(row)
     return summary_rows, drat_rows, sctt_rows
 
@@ -200,9 +247,14 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", type=Path, nargs="+", required=True,
                         help="One export or both local Session 1 and Session 2 downloads")
+    parser.add_argument("--embedding", action="append", default=[], metavar="LABEL=SPEC",
+                        help="Repeat for GloVe, FastText, and sbert:all-mpnet-base-v2")
     parser.add_argument("--glove", default=None,
-                        help="Embedding model for DAT and DRAT; omit to export raw condition data")
-    parser.add_argument("--sctt-model", default=None)
+                        help="Legacy single-embedding option; equivalent to --embedding glove=SPEC")
+    parser.add_argument("--drat-pool", type=Path, default=None,
+                        help="Required random-noun pool when scoring DRAT")
+    parser.add_argument("--sctt-scores", type=Path, default=None,
+                        help="Optional CAP-returned CSV containing prediction scores")
     parser.add_argument("--raven-scores", type=Path, default=None,
                         help="Optional CSV with study_code,standardized_score")
     parser.add_argument("--out", type=Path, default=Path("scores.csv"))
@@ -210,20 +262,45 @@ def main() -> None:
     parser.add_argument("--sctt-out", type=Path, default=Path("sctt_responses.csv"))
     args = parser.parse_args()
 
-    model = None
-    if args.glove:
-        from _embed import load_keyed_vectors
-        model = load_keyed_vectors(args.glove)
-    pool = score_drat.load_pool() if model else []
     sessions = [session for path in args.input for session in load_sessions(path)]
+    specs = list(args.embedding)
+    if args.glove:
+        specs.append(f"glove={args.glove}")
+    models = []
+    if specs:
+        from _embed import load_embedding
+        for value in specs:
+            label, separator, spec = value.partition("=")
+            if not separator or not label or not spec:
+                parser.error("--embedding must use LABEL=SPEC")
+            if any(existing == label for existing, _ in models):
+                parser.error(f"Duplicate embedding label: {label}")
+            models.append((label, load_embedding(spec)))
+    has_drat = any(
+        (response.get("test") or response.get("test_id")) == "drat"
+        for session in sessions for response in session.get("responses", [])
+    )
+    if models and has_drat and args.drat_pool is None:
+        parser.error("--drat-pool is required for DRAT scoring; the bundled file is only a placeholder")
+    pool = score_drat.load_pool(args.drat_pool) if args.drat_pool else []
+    preload_words = set(pool)
+    for session in sessions:
+        for response in session.get("responses", []):
+            preload_words.update(response.get("anchors") or [])
+            preload_words.update(
+                value for key, value in (response.get("response") or {}).items()
+                if key.startswith("w") and value
+            )
+    for _, model in models:
+        if hasattr(model, "preload"):
+            model.preload(preload_words)
     summary, drat, sctt = score_participants(
-        sessions, model, pool, load_raven_scores(args.raven_scores)
+        sessions, models, pool, load_raven_scores(args.raven_scores),
+        load_sctt_scores(args.sctt_scores),
     )
     write_csv(args.out, summary, ["study_code", "slot", "session1_record_id", "session2_record_id"])
     write_csv(args.drat_out, drat, ["study_code", "presentation_index", "relation", "anchor_size"])
     if sctt:
-        if args.sctt_model:
-            sctt = score_sctt.run_roberta(sctt, args.sctt_model)
         score_sctt.write_scorer_csv(sctt, args.sctt_out)
     print(f"Scored {len(summary)} study codes across {len(sessions)} sessions")
     print(f"Wrote {args.out} and {args.drat_out}")

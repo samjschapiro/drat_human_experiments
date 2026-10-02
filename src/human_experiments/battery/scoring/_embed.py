@@ -11,6 +11,32 @@ from __future__ import annotations
 import numpy as np
 
 
+class SentenceTransformerVectors:
+    """Dictionary-like, cached word vectors from a SentenceTransformer model."""
+
+    def __init__(self, model_name: str):
+        from sentence_transformers import SentenceTransformer
+
+        self.model = SentenceTransformer(model_name)
+        self.vectors: dict[str, np.ndarray] = {}
+
+    def preload(self, words) -> None:
+        missing = sorted({normalize_word(word) for word in words if normalize_word(word)}
+                         - self.vectors.keys())
+        if not missing:
+            return
+        encoded = self.model.encode(missing, normalize_embeddings=True, show_progress_bar=True)
+        self.vectors.update(zip(missing, encoded))
+
+    def __contains__(self, word: str) -> bool:
+        return bool(normalize_word(word))
+
+    def __getitem__(self, word: str) -> np.ndarray:
+        word = normalize_word(word)
+        self.preload([word])
+        return self.vectors[word]
+
+
 def cosine_sim(u: np.ndarray, v: np.ndarray) -> float:
     nu, nv = np.linalg.norm(u), np.linalg.norm(v)
     if nu == 0 or nv == 0:
@@ -53,3 +79,10 @@ def load_keyed_vectors(spec: str):
                                                  no_header=no_header)
     import gensim.downloader as api
     return api.load(spec)
+
+
+def load_embedding(spec: str):
+    """Load a static embedding or `sbert:MODEL_NAME` sentence transformer."""
+    if spec.startswith("sbert:"):
+        return SentenceTransformerVectors(spec.removeprefix("sbert:"))
+    return load_keyed_vectors(spec)

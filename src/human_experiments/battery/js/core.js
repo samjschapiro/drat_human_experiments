@@ -124,7 +124,18 @@ async function main() {
 
     const { studyCode, sessionNumber } = await window.requestStudyEntry();
     const slotParam = new URLSearchParams(location.search).get("slot");
-    const slot = slotParam === null ? 0 : Number(slotParam);
+    let slot = slotParam === null ? 0 : Number(slotParam);
+    if (sessionNumber === 2) {
+        const firstKey = `thinking-tasks:${study.protocolVersion}:${studyCode}:session-1`;
+        const first = JSON.parse(localStorage.getItem(firstKey) || "null");
+        if (!first?.complete) {
+            fatal("Session 2 is locked until Session 1 is completed with this study code.");
+        }
+        if (slotParam !== null && slot !== first.slot) {
+            fatal("Session 2 must use the assignment saved by Session 1.");
+        }
+        slot = first.slot;
+    }
     if (!Number.isInteger(slot) || slot < 0 || slot >= materials.assignments.length) {
         fatal("The local preview slot must match one of the generated assignments.");
     }

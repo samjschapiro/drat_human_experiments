@@ -10,8 +10,12 @@ window.BATTERY_MODULES["sctt"] = {
     buildTimeline(cfg, ctx) {
         const bank = ctx.itemBank || [];           // window.ITEM_BANKS.sctt
         const nResp = cfg.n_responses_per_item || 3;
-        // Per-participant item order, seeded by slot.
-        const items = ctx.seededShuffle(bank, ctx.slot * 17 + 3);
+        // Match the validated administration: randomize subtest order while
+        // preserving the published item order within each subtest.
+        const tasks = ctx.seededShuffle(
+            ["research question", "hypothesis", "experiment"], ctx.slot * 17 + 3
+        );
+        const items = tasks.flatMap((task) => bank.filter((item) => item.task === task));
 
         const intro = {
             type: jsPsychInstructions,
@@ -26,6 +30,7 @@ window.BATTERY_MODULES["sctt"] = {
             for (let r = 0; r < nResp; r++) {
                 boxes +=
                     `<div style="margin:8px 0"><textarea name="r${r}" rows="2" ` +
+                    `required ` +
                     `style="width:90%;font-size:15px;padding:6px" ` +
                     `placeholder="Response ${r + 1}"></textarea></div>`;
             }

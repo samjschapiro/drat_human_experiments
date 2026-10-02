@@ -11,7 +11,9 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
+import csv
 import json
+import math
 from pathlib import Path
 import random
 
@@ -24,6 +26,19 @@ SEED = 20260929
 
 
 def read_materials(materials_dir: Path) -> tuple[list[dict], list[dict]]:
+    with (materials_dir / "propensity_score_sub.csv").open(
+        newline="", encoding="utf-8-sig"
+    ) as file:
+        propensity_rows = list(csv.DictReader(file))
+    if len(propensity_rows) != 842:
+        raise ValueError("Expected 842 directional propensity-score rows")
+    propensity = {row["word_pairs"].lower(): row for row in propensity_rows}
+    if len(propensity) != 842:
+        raise ValueError("Propensity-score word-pair directions must be unique")
+    unordered = Counter(tuple(sorted(key.split("_"))) for key in propensity)
+    if len(unordered) != 421 or set(unordered.values()) != {2}:
+        raise ValueError("Expected 421 propensity-score pairs rated in both directions")
+
     triplet_sheet = load_workbook(
         materials_dir / "All_Triplets.xlsx", read_only=True, data_only=True
     ).active
@@ -60,6 +75,13 @@ def read_materials(materials_dir: Path) -> tuple[list[dict], list[dict]]:
         selection = str(row[5]).strip().lower()
         if (relation == "unrelated") != selection.startswith("eligible"):
             raise ValueError(f"Pair row {index} has the wrong selection rule")
+        if relation != "unrelated":
+            rating_columns = {"causal": "Cau", "constitutive": "Con", "categorical": "Cat"}
+            source = propensity.get(f"{anchors[0]}_{anchors[1]}".lower())
+            if source is None or not math.isclose(
+                float(source[rating_columns[relation]]), float(row[7]), abs_tol=0.001
+            ):
+                raise ValueError(f"Pair row {index} does not match the propensity-score source")
         pairs.append({
             "pair_id": f"pair_{index:03d}",
             "triplet_id": triplet_id,
