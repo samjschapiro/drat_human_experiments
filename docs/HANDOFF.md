@@ -2,6 +2,11 @@
 
 Updated: October 2, 2026
 
+Detailed handoffs:
+
+- `docs/WASIQ_DEPLOYMENT_HANDOFF.md` — production integration and deployment.
+- `docs/STUDY_FLOW_IMPLEMENTATION.md` — complete implementation record.
+
 ## Current state
 
 - Work is isolated in `/Users/pritmhala/Computer_Graphics_HW1/Babak_AI3_Project`
