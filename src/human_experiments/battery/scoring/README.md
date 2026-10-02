@@ -34,8 +34,14 @@ python score_battery.py \
     --input ../data/battery_raw.json \
     --glove glove-wiki-gigaword-300        # omit to skip DAT/DRAT
 
+# Or score the two local-preview downloads together
+python score_battery.py \
+    --input ~/Downloads/drat-local-session-1.json \
+            ~/Downloads/drat-local-session-2.json
+
 # Outputs:
 #   scores.csv          — one wide row per participant (dat/rat/drat/sctt)
+#   drat_blocks.csv     — one auditable row per DRAT block
 #   sctt_responses.csv  — long, one row per SCTT answer (for the RoBERTa scorer)
 ```
 

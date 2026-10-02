@@ -1,5 +1,42 @@
 # Creativity Battery (DAT · RAT · SCTT · DRAT)
 
+## Current two-session local prototype
+
+The `feature/drat-study-flow` branch implements the approved local study flow on
+top of the Supabase/Vercel deployment branch. It is deliberately blocked from
+production use until the study team supplies the final Q-global URL and approves
+the participant wording and backend save contract.
+
+Run it locally from this directory:
+
+```bash
+python3 -m http.server 8001
+```
+
+Then open `http://127.0.0.1:8001/?session=1&slot=0` or
+`http://127.0.0.1:8001/?session=2&slot=0`. Enter the same deidentified study code
+for both sessions. `slot` may be 0–259 and selects a reproducible counterbalance /
+DRAT assignment. Each completed task is saved synchronously in browser storage;
+the completion screen downloads a deidentified JSON file. A refresh resumes at
+the first unsaved task.
+
+Session 1 runs counterbalanced DAT, RAT, and the Raven handoff, followed by BFI-10
+and demographics. Session 2 runs all eight DRAT design cells, a break, the orange
+attention check, and the 12-item SCTT. Local Raven is a placeholder because the
+licensed Q-global URL has not been supplied.
+
+Score both local downloads together:
+
+```bash
+cd scoring
+python score_battery.py \
+  --input /path/to/drat-local-session-1.json /path/to/drat-local-session-2.json
+```
+
+Add `--glove ...` when the approved embedding model is available. Production
+connection and remaining approval gates are tracked in
+[`docs/HANDOFF.md`](../../../docs/HANDOFF.md).
+
 A configurable, **within-subjects** battery of four creativity/cognition tests,
 built on the same serverless backend as the rating-study `template/` but with a
 different frontend paradigm: participants *generate* responses (type words, solve

@@ -58,26 +58,26 @@
     {
       "item_id": "sctt_exp_1",
       "task": "experiment",
-      "prompt": "testing whether only water and sunlight determine flower growth",
-      "prompt_html": "Your friend thinks only water and sunlight determine how much a flower grows, and nothing else matters. <b>How could you test that hypothesis?</b>"
-    },
-    {
-      "item_id": "sctt_exp_2",
-      "task": "experiment",
       "prompt": "testing whether someone can read minds",
       "prompt_html": "Your cousin claims they can read minds, but it only works when a person doesn't know their mind is being read. <b>How could you test to see if this super power is real?</b>"
     },
     {
-      "item_id": "sctt_exp_3",
+      "item_id": "sctt_exp_2",
       "task": "experiment",
       "prompt": "testing whether students at your school are friendlier",
       "prompt_html": "You think students at your school are friendlier than students at most schools. <b>How could you test that hypothesis?</b>"
     },
     {
-      "item_id": "sctt_exp_4",
+      "item_id": "sctt_exp_3",
       "task": "experiment",
       "prompt": "testing whether some animals have a sense of humor",
       "prompt_html": "You think some animals have a sense of humor that humans don't usually understand. <b>How could you test that hypothesis?</b>"
+    },
+    {
+      "item_id": "sctt_exp_4",
+      "task": "experiment",
+      "prompt": "testing whether birds understand humans but ignore them",
+      "prompt_html": "You think birds can understand humans but just choose to ignore us because what humans say isn't important to their lives. <b>How could you test that hypothesis?</b>"
     }
   ]
 }

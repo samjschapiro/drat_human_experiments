@@ -33,7 +33,9 @@ window.BATTERY_MODULES["dat"] = {
                 `different from each other as possible.</p>`,
             html: `<div style="text-align:center">${fields}</div>`,
             button_label: "Submit",
-            data: { test: "dat", item_id: "dat_single", battery_tag: "task" },
+            data: { test: "dat", item_id: "dat_single", battery_tag: "task",
+                    displayed_stimuli: { response_limit: n, time_limit_sec: cfg.time_limit_sec,
+                                         instructions: cfg.intro_html } },
             on_load: cd.start,
             on_finish: (data) => { cd.stop(); data.timed_out = cd.expired(); },
         };

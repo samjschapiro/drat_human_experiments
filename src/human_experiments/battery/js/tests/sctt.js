@@ -39,7 +39,9 @@ window.BATTERY_MODULES["sctt"] = {
                 // task + prompt are carried through for the offline scorer's input rows.
                 data: {
                     test: "sctt", item_id: item.item_id, task: item.task,
+                    presentation_index: idx,
                     prompt: item.prompt, battery_tag: "task",
+                    displayed_stimuli: { prompt_html: item.prompt_html, task: item.task },
                 },
                 on_load: cd.start,
                 on_finish: (data) => { cd.stop(); data.timed_out = cd.expired(); },

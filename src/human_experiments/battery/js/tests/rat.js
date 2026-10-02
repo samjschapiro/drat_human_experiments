@@ -33,7 +33,9 @@ window.BATTERY_MODULES["rat"] = {
                     name: "answer", required: false, columns: 24,
                 }],
                 button_label: "Submit",
-                data: { test: "rat", item_id: item.item_id, battery_tag: "task" },
+                data: { test: "rat", item_id: item.item_id, presentation_index: idx,
+                        battery_tag: "task",
+                        displayed_stimuli: { cues: item.cues, time_limit_sec: cfg.item_time_limit_sec } },
                 on_load: cd.start,
                 on_finish: (data) => { cd.stop(); data.timed_out = cd.expired(); },
             };

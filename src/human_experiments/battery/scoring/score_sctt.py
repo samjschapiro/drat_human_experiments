@@ -58,6 +58,8 @@ def fluency(responses: list[dict]) -> dict:
 
 def write_scorer_csv(rows: list[dict], out_path: Path) -> Path:
     cols = ["participant_id", "item_id", "task", "prompt", "response_index", "response"]
+    if any("creativity" in row for row in rows):
+        cols.append("creativity")
     out_path = Path(out_path)
     with out_path.open("w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=cols)

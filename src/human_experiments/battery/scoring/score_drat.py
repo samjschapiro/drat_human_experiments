@@ -75,7 +75,8 @@ def score_drat(words: list[str], anchors: list[str], model, pool: list[str],
             survivors.append(nw)
 
     if len(survivors) < min_survivors:
-        return {"drat_score": None, "n_survivors": len(survivors),
+        # The study's DRAT scoring rule assigns zero for fewer than three survivors.
+        return {"drat_score": 0.0, "n_survivors": len(survivors),
                 "threshold": round(tau, 4), "survivors": survivors}
 
     dists = [cosine_dist(model[a], model[b]) for a, b in itertools.combinations(survivors, 2)]
