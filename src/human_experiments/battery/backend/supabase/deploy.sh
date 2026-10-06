@@ -1,18 +1,16 @@
 #!/bin/bash
 # Deploy the Supabase backend: apply migrations, set function secrets, deploy
-# the three Edge Functions.
+# the Edge Functions. Normally called by ../../deploy.sh dev|prod.
 #
 # Required env:
-#   SUPABASE_PROJECT_REF  project ref (the <ref> in https://<ref>.supabase.co);
-#                         may instead be passed as $1
-#   TOTAL_SLOTS           must equal the number of slots the migration seeds
-#   DATA_EXPORT_TOKEN     bearer token that get-data requires; generate once with
-#                         `openssl rand -hex 32` and keep it out of git
+#   SUPABASE_PROJECT_REF   project ref (the <ref> in https://<ref>.supabase.co);
+#                          may instead be passed as $1
+#   SUPABASE_ACCESS_TOKEN  personal access token (or `npx supabase login` once)
+#   SUPABASE_DB_PASSWORD   that project's database password
+#   DATA_EXPORT_TOKEN      researcher token for get-data and admin
 #
-# Prerequisites: Node (for npx) and `npx supabase login` done once.
-#
-# The Supabase CLI's project root is battery/backend/ (it contains supabase/
-# with config.toml, migrations/ and functions/), so everything runs from there.
+# Requires functions/_shared/study_manifest.json (prepare_backend_manifest.py).
+# The Supabase CLI's project root is battery/backend/, so everything runs there.
 
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -20,17 +18,21 @@ cd "$SCRIPT_DIR/.."
 
 PROJECT_REF="${1:-${SUPABASE_PROJECT_REF:-}}"
 : "${PROJECT_REF:?Usage: $0 <project-ref>  (or set SUPABASE_PROJECT_REF)}"
-: "${TOTAL_SLOTS:?Set TOTAL_SLOTS (printed by prepare_battery.py)}"
 : "${DATA_EXPORT_TOKEN:?Set DATA_EXPORT_TOKEN (generate with: openssl rand -hex 32)}"
 command -v npx >/dev/null 2>&1 || { echo "npx required (Node.js)"; exit 1; }
 
-# The migration seeds slots 0..N; TOTAL_SLOTS must be N+1 or counterbalancing
-# silently breaks.
-SEEDED_MAX=$(grep -o 'generate_series(0, *[0-9]*)' supabase/migrations/*_init.sql \
-    | grep -o '[0-9]*)$' | tr -d ')')
-if [ "$((SEEDED_MAX + 1))" != "$TOTAL_SLOTS" ]; then
-    echo "ERROR: TOTAL_SLOTS=$TOTAL_SLOTS but the migration seeds $((SEEDED_MAX + 1)) slots."
-    echo "Edit the generate_series bound in supabase/migrations/*_init.sql (a new migration if already applied)."
+MANIFEST=supabase/functions/_shared/study_manifest.json
+[ -f "$MANIFEST" ] || { echo "ERROR: $MANIFEST missing; run prepare_backend_manifest.py"; exit 1; }
+
+# Every DRAT assignment needs a slot row, and no slot may exist without one.
+# Slots are seeded by generate_series(a, b) across the migrations; the highest
+# bound + 1 must equal the manifest's slot count.
+N_SLOTS=$(grep -Eo '"n_slots":[0-9]+' "$MANIFEST" | grep -Eo '[0-9]+$')
+SEEDED_MAX=$(grep -ho 'generate_series([0-9]*, *[0-9]*)' supabase/migrations/*.sql \
+    | grep -Eo '[0-9]+\)$' | tr -d ')' | sort -n | tail -n1)
+if [ "$((SEEDED_MAX + 1))" != "$N_SLOTS" ]; then
+    echo "ERROR: manifest has $N_SLOTS assignments but migrations seed slots 0..$SEEDED_MAX."
+    echo "Add a migration that seeds the missing slots (never edit an applied migration)."
     exit 1
 fi
 
@@ -42,10 +44,9 @@ npx supabase db push
 
 echo ""
 echo "Setting function secrets ..."
-npx supabase secrets set --project-ref "$PROJECT_REF" \
-    "TOTAL_SLOTS=$TOTAL_SLOTS" "DATA_EXPORT_TOKEN=$DATA_EXPORT_TOKEN"
+npx supabase secrets set --project-ref "$PROJECT_REF" "DATA_EXPORT_TOKEN=$DATA_EXPORT_TOKEN"
 
-for fn in get-slot submit-data get-data; do
+for fn in start-session save-block finish-session get-data admin; do
     echo ""
     echo "Deploying function: $fn"
     npx supabase functions deploy "$fn" --project-ref "$PROJECT_REF"
@@ -55,7 +56,9 @@ BASE="https://${PROJECT_REF}.supabase.co/functions/v1"
 echo ""
 echo "========================================"
 echo "Edge functions deployed at: $BASE"
-echo "  GET  $BASE/get-slot?PROLIFIC_PID=..."
-echo "  POST $BASE/submit-data"
-echo "  GET  $BASE/get-data   (Authorization: Bearer \$DATA_EXPORT_TOKEN)"
+echo "  POST $BASE/start-session"
+echo "  POST $BASE/save-block      (Bearer session token)"
+echo "  POST $BASE/finish-session  (Bearer session token)"
+echo "  GET  $BASE/get-data        (Bearer \$DATA_EXPORT_TOKEN)"
+echo "  POST $BASE/admin           (Bearer \$DATA_EXPORT_TOKEN)"
 echo "========================================"

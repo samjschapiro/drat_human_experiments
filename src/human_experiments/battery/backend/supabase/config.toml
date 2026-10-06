@@ -8,16 +8,24 @@ project_id = "drat-battery"
 [db]
 major_version = 17
 
-# Participant-facing functions are called by the browser without a Supabase
-# session, so the gateway must not demand a JWT. They talk to Postgres with the
-# service-role key, which never leaves the function.
-[functions.get-slot]
+# The gateway's JWT check is off for every function: participants have no
+# Supabase session. Each function authorizes requests itself:
+#   start-session            issued study code (study_codes table)
+#   save-block, finish-session  per-session bearer token from start-session
+#   get-data, admin          DATA_EXPORT_TOKEN (researchers only)
+# All database access inside the functions uses the service-role key, which
+# never leaves the server.
+[functions.start-session]
 verify_jwt = false
 
-[functions.submit-data]
+[functions.save-block]
 verify_jwt = false
 
-# get-data checks its own bearer token (DATA_EXPORT_TOKEN secret) inside the
-# function; see functions/get-data/index.ts.
+[functions.finish-session]
+verify_jwt = false
+
 [functions.get-data]
+verify_jwt = false
+
+[functions.admin]
 verify_jwt = false

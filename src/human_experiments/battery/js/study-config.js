@@ -1,7 +1,8 @@
 // Local study-flow configuration. Production values require Babak's approval.
 window.STUDY_CONFIG = {
     protocolVersion: "drat-human-2026-v1",
-    localPreviewOnly: true,
+    // false: a deployed dev site saves to its Supabase backend. Prod stays locked in core.js.
+    localPreviewOnly: false,
     session1Orders: [
         ["dat", "rat", "raven"],
         ["dat", "raven", "rat"],

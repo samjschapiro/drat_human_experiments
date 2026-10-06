@@ -7,8 +7,7 @@
 # Settings come from gitignored files at the repo root:
 #   .env          shared:   SUPABASE_API_KEY (personal access token, sbp_...)
 #                           VERCEL_API_KEY
-#   .env.<env>    per env:  SUPABASE_PROJECT_REF, DB_PASSWORD, DATA_EXPORT_TOKEN,
-#                           COMPLETION_URL
+#   .env.<env>    per env:  SUPABASE_PROJECT_REF, DB_PASSWORD, DATA_EXPORT_TOKEN
 # See .env.example for the template.
 #
 # Each environment is a separate Supabase project and a separate Vercel project
@@ -42,16 +41,14 @@ set +a
 : "${SUPABASE_PROJECT_REF:?missing in .env.$ENV_NAME}"
 : "${DB_PASSWORD:?missing in .env.$ENV_NAME}"
 : "${DATA_EXPORT_TOKEN:?missing in .env.$ENV_NAME}"
-: "${COMPLETION_URL:?missing in .env.$ENV_NAME}"
 
-if [ ! -f js/battery-data.js ]; then
-    echo "ERROR: js/battery-data.js missing. Run prepare_battery.py first."
-    exit 1
-fi
-# The bundle is the source of truth for the slot count; backend/supabase/deploy.sh
-# checks it against the slots the migration seeds.
-TOTAL_SLOTS=$(grep -Eo '"total_slots": *[0-9]+' js/battery-data.js | grep -Eo '[0-9]+$')
-: "${TOTAL_SLOTS:?could not read total_slots from js/battery-data.js}"
+# The backend validates saves against a manifest built from the same bundles
+# the browser loads (orders, item IDs, 260 DRAT assignments); rebuild it now so
+# the two can never drift. backend/supabase/deploy.sh checks slots against it.
+python3 prepare_backend_manifest.py
+
+# Recorded in every saved event so data can be traced to the deployed code.
+APP_VERSION="$(git rev-parse --short HEAD)$(git diff --quiet HEAD -- . || echo '-dirty')"
 
 # While js/study-config.js has localPreviewOnly: true, the study flow keeps data
 # in the browser and core.js refuses any API_BASE. In that mode we publish the
@@ -68,7 +65,7 @@ echo "Deploying ENV=$ENV_NAME"
 [ "$PREVIEW_ONLY" = "true" ] && echo "  MODE: LOCAL PREVIEW — frontend only; no data reaches Supabase"
 echo "  Supabase project: $SUPABASE_PROJECT_REF"
 echo "  Vercel project:   drat-$ENV_NAME"
-echo "  TOTAL_SLOTS:      $TOTAL_SLOTS"
+echo "  App version:      $APP_VERSION"
 echo "================================================"
 if [ "$ENV_NAME" = "prod" ]; then
     read -r -p "This is the PARTICIPANT environment. Type 'prod' to continue: " answer
@@ -82,7 +79,6 @@ if [ "$PREVIEW_ONLY" = "true" ]; then
 else
     SUPABASE_ACCESS_TOKEN="$SUPABASE_API_KEY" \
     SUPABASE_DB_PASSWORD="$DB_PASSWORD" \
-    TOTAL_SLOTS="$TOTAL_SLOTS" \
     DATA_EXPORT_TOKEN="$DATA_EXPORT_TOKEN" \
         bash backend/supabase/deploy.sh "$SUPABASE_PROJECT_REF"
     API_BASE="https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1"
@@ -99,7 +95,7 @@ cat > "$STAGE/js/deploy-config.js" <<EOF
 window.DEPLOY_CONFIG = {
     ENV: "$ENV_NAME",
     API_BASE: "$API_BASE",
-    COMPLETION_URL: "$COMPLETION_URL",
+    APP_VERSION: "$APP_VERSION",
 };
 EOF
 
