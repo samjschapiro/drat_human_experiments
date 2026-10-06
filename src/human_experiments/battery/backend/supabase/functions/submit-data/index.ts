@@ -48,7 +48,6 @@ serve(async (req) => {
         slot:           body.slot ?? null,
         payload:        body,
         user_agent:     req.headers.get("user-agent") ?? null,
-        source_ip:      req.headers.get("x-forwarded-for") ?? null,
     }).select("id, submitted_at").single();
 
     if (error) {

@@ -1,16 +1,16 @@
 # Backend swap guide
 
-The frontend doesn't care where the API lives. Pick one of the two backends below; deploy it; paste the resulting base URL into `js/experiment.js` as `API_BASE`.
+The frontend doesn't care where the API lives. Pick one of the two backends below and deploy it; `../deploy.sh` writes the resulting base URL into `js/deploy-config.js` as `API_BASE`.
 
 Both backends expose the same three endpoints:
 
 | Endpoint        | Method | Body / Query                                | Returns                                          |
 |-----------------|--------|---------------------------------------------|--------------------------------------------------|
-| `/getSlot`      | GET    | `?PROLIFIC_PID=...`                         | `{ slot, total_slots, status }`                  |
-| `/submitData`   | POST   | `{ participant_id, slot, responses, ... }`  | `{ status, submission_id }`                      |
-| `/getData`      | GET    | (admin)                                     | `{ participants, total_responses, csv_data, raw_data }` |
+| `/get-slot`     | GET    | `?PROLIFIC_PID=...`                         | `{ slot, total_slots, status }`                  |
+| `/submit-data`  | POST   | `{ participant_id, slot, responses, ... }`  | `{ status, submission_id }`                      |
+| `/get-data`     | GET    | admin; Supabase requires `Authorization: Bearer $DATA_EXPORT_TOKEN` | `{ participants, total_responses, csv_data, raw_data }` |
 
-Switching backends is a one-line change in `js/core.js`.
+Switching backends is a one-line change in `js/deploy-config.js`.
 
 ---
 
@@ -36,15 +36,23 @@ sam list stack-outputs --stack-name <your-stack> | grep URL
 
 ## Option B — Supabase (Edge Functions + Postgres)
 
-Files: `supabase/schema.sql`, `supabase/functions/{get-slot,submit-data,get-data}/`, `supabase/deploy.sh`.
+Files: `supabase/config.toml`, `supabase/migrations/*_init.sql`, `supabase/functions/{get-slot,submit-data,get-data}/`, `supabase/deploy.sh`. The Supabase CLI's project root is this `backend/` folder.
 
-**Prerequisites:** Supabase project (free tier OK), `npx supabase` (no install needed).
+**Prerequisites:** Supabase project (free tier OK), `npx supabase login` once (no install needed).
 
-**Deploy:**
+**Deploy:** normally via `../deploy.sh dev|prod`, which loads the right env file and
+calls `supabase/deploy.sh` for you. Standalone:
 ```bash
-cd supabase/
-bash deploy.sh <your-project-ref>
+export SUPABASE_ACCESS_TOKEN=... SUPABASE_DB_PASSWORD=... TOTAL_SLOTS=160 DATA_EXPORT_TOKEN=...
+bash supabase/deploy.sh <your-project-ref>
 ```
+
+`../deploy.sh` only drives Supabase; the AWS backend (Option A) is kept for reference
+and must be deployed by hand with `sam`.
+
+**Access model:** all three functions are deployed without the gateway JWT check (`config.toml`), because participants have no Supabase session. `get-slot` / `submit-data` are intentionally public; `get-data` checks the `DATA_EXPORT_TOKEN` secret itself. Tables have RLS on with no policies, and `claim_slot()` is not executable by the `anon`/`authenticated` roles, so the publishable key can't read data or claim slots directly. No IP addresses are stored.
+
+**Local testing:** `npx supabase start` from this folder (needs Docker) runs Postgres + the functions locally; `npx supabase functions serve --env-file <file with TOTAL_SLOTS, DATA_EXPORT_TOKEN>` serves them at `http://127.0.0.1:54321/functions/v1`.
 
 **Costs (rough):** $0 on the free tier (500 MB Postgres + 2M edge-function invocations/month). Comfortable headroom for 720+ participants.
 

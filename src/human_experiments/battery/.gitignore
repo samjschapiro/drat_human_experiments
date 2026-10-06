@@ -1,0 +1,3 @@
+.vercel
+# per-environment staging folders written by deploy.sh
+.deploy

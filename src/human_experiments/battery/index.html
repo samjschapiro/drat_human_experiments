@@ -27,19 +27,26 @@
             border: none; border-radius: 5px; cursor: pointer;
         }
         .jspsych-btn:hover { background-color: #0056b3; }
-        #debug-banner {
+        /* Status banner (debug mode / dev environment). A pseudo-element on
+           <body> because jsPsych replaces body's children when it starts. */
+        body[data-banner] { padding-top: 40px; }
+        body[data-banner]::before {
+            content: attr(data-banner);
+            position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
             background: #fef3c7; color: #92400e;
-            padding: 8px 12px; font-size: 14px;
+            padding: 8px 12px; font-size: 14px; text-align: center;
             border-bottom: 1px solid #fcd34d;
         }
     </style>
 </head>
 <body>
-    <div id="debug-banner" style="display:none">DEBUG MODE — no PROLIFIC_PID detected; submissions disabled.</div>
 
     <!-- Generated bundle: window.BATTERY_CONFIG + window.ITEM_BANKS.
          Must load before the test modules and core.js. -->
     <script src="js/battery-data.js"></script>
+
+    <!-- Deployment settings (API base URL, completion redirect). -->
+    <script src="js/deploy-config.js"></script>
 
     <!-- Shared helpers + self-registering test modules (before core.js). -->
     <script src="js/countdown.js"></script>

@@ -1,86 +1,101 @@
 #!/bin/bash
-# Deploy the battery: backend (AWS or Supabase) + frontend (Vercel) +
-# sed-substitute API_BASE / COMPLETION_URL into js/core.js.
+# Deploy one environment of the battery: Supabase backend + Vercel frontend.
 #
-# Before deploying:
-#   1. python prepare_battery.py --config battery_config.example.yaml
-#      → note the printed TOTAL_SLOTS, set it in backend/supabase/schema.sql
-#        (generate_series upper bound = TOTAL_SLOTS - 1) and export it below.
-#   2. export COMPLETION_URL='https://app.prolific.com/submissions/complete?cc=XXXX'
-#   3. export TOTAL_SLOTS=160   # must match schema + bundle
+#   bash deploy.sh dev     # test environment: test data only, wipe freely
+#   bash deploy.sh prod    # participant environment: never wipe (asks to confirm)
 #
-# Usage:
-#   bash deploy.sh supabase   # uses backend/supabase (recommended)
-#   bash deploy.sh aws        # uses backend/aws
+# Settings come from gitignored files at the repo root:
+#   .env          shared:   SUPABASE_API_KEY (personal access token, sbp_...)
+#                           VERCEL_API_KEY
+#   .env.<env>    per env:  SUPABASE_PROJECT_REF, DB_PASSWORD, DATA_EXPORT_TOKEN,
+#                           COMPLETION_URL
+# See .env.example for the template.
+#
+# Each environment is a separate Supabase project and a separate Vercel project
+# (drat-dev / drat-prod). The frontend is staged into .deploy/drat-<env>/ with
+# its own js/deploy-config.js, so the two can never point at each other's
+# database. The committed js/deploy-config.js stays empty (local debug only).
 
-set -e
+set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 cd "$SCRIPT_DIR"
 
-BACKEND="${1:-supabase}"
-EXPERIMENT_NAME=$(basename "$SCRIPT_DIR")
-COMPLETION_URL="${COMPLETION_URL:-https://app.prolific.com/submissions/complete}"
+ENV_NAME="${1:-}"
+case "$ENV_NAME" in
+    dev|prod) ;;
+    *) echo "Usage: $0 dev|prod"; exit 1 ;;
+esac
+
+for f in "$REPO_ROOT/.env" "$REPO_ROOT/.env.$ENV_NAME"; do
+    [ -f "$f" ] || { echo "ERROR: $f not found (see .env.example)"; exit 1; }
+done
+set -a
+# shellcheck disable=SC1091
+. "$REPO_ROOT/.env"
+# shellcheck disable=SC1090
+. "$REPO_ROOT/.env.$ENV_NAME"
+set +a
+
+: "${SUPABASE_API_KEY:?missing in .env}"
+: "${VERCEL_API_KEY:?missing in .env}"
+: "${SUPABASE_PROJECT_REF:?missing in .env.$ENV_NAME}"
+: "${DB_PASSWORD:?missing in .env.$ENV_NAME}"
+: "${DATA_EXPORT_TOKEN:?missing in .env.$ENV_NAME}"
+: "${COMPLETION_URL:?missing in .env.$ENV_NAME}"
 
 if [ ! -f js/battery-data.js ]; then
     echo "ERROR: js/battery-data.js missing. Run prepare_battery.py first."
     exit 1
 fi
+# The bundle is the source of truth for the slot count; backend/supabase/deploy.sh
+# checks it against the slots the migration seeds.
+TOTAL_SLOTS=$(grep -Eo '"total_slots": *[0-9]+' js/battery-data.js | grep -Eo '[0-9]+$')
+: "${TOTAL_SLOTS:?could not read total_slots from js/battery-data.js}"
 
-case "$BACKEND" in
-    aws)
-        command -v sam >/dev/null 2>&1 || { echo "SAM CLI required"; exit 1; }
-        command -v jq  >/dev/null 2>&1 || { echo "jq required"; exit 1; }
-        cd backend/aws
-        STACK_NAME="${EXPERIMENT_NAME//_/-}"
-        for d in lambda/*/; do
-            [ -f "$d/package.json" ] && (cd "$d" && npm install --silent)
-        done
-        sam build
-        sam deploy --stack-name "$STACK_NAME" \
-            --parameter-overrides "ExperimentName=$EXPERIMENT_NAME" --no-confirm-changeset
-        API_BASE=$(sam list stack-outputs --stack-name "$STACK_NAME" --output json \
-            | jq -r '.[] | select(.OutputKey=="APIGatewayURL") | .OutputValue')
-        cd "$SCRIPT_DIR"
-        ;;
-    supabase)
-        echo "Reminder: set the get-slot TOTAL_SLOTS secret to match your bundle:"
-        echo "  npx supabase secrets set TOTAL_SLOTS=${TOTAL_SLOTS:-160}"
-        bash backend/supabase/deploy.sh
-        echo ""
-        read -p "Paste the Supabase functions base URL (https://<ref>.supabase.co/functions/v1): " API_BASE
-        ;;
-    *)
-        echo "Unknown backend: $BACKEND. Use 'aws' or 'supabase'."
-        exit 1
-        ;;
-esac
-
-if [ -z "$API_BASE" ]; then
-    echo "ERROR: could not resolve API_BASE"
-    exit 1
+echo "================================================"
+echo "Deploying ENV=$ENV_NAME"
+echo "  Supabase project: $SUPABASE_PROJECT_REF"
+echo "  Vercel project:   drat-$ENV_NAME"
+echo "  TOTAL_SLOTS:      $TOTAL_SLOTS"
+echo "================================================"
+if [ "$ENV_NAME" = "prod" ]; then
+    read -r -p "This is the PARTICIPANT environment. Type 'prod' to continue: " answer
+    [ "$answer" = "prod" ] || { echo "Aborted."; exit 1; }
 fi
 
-echo ""
-echo "Patching js/core.js (API_BASE, COMPLETION_URL)"
-sed -i.bak \
-    -e "s|const API_BASE = '__API_BASE__';|const API_BASE = '$API_BASE';|" \
-    -e "s|const COMPLETION_URL = '__COMPLETION_URL__';|const COMPLETION_URL = '$COMPLETION_URL';|" \
-    js/core.js
-rm -f js/core.js.bak
+# ── Backend ────────────────────────────────────────────────────────────────
+SUPABASE_ACCESS_TOKEN="$SUPABASE_API_KEY" \
+SUPABASE_DB_PASSWORD="$DB_PASSWORD" \
+TOTAL_SLOTS="$TOTAL_SLOTS" \
+DATA_EXPORT_TOKEN="$DATA_EXPORT_TOKEN" \
+    bash backend/supabase/deploy.sh "$SUPABASE_PROJECT_REF"
+API_BASE="https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1"
 
-if ! command -v vercel >/dev/null 2>&1; then
-    echo "Vercel CLI not found. Install: npm install -g vercel ; then: vercel --prod"
-    exit 0
-fi
-FRONTEND_URL=$(vercel --prod --yes 2>/dev/null | tail -n1)
+# ── Frontend: stage only what the browser needs ────────────────────────────
+# The staging dir is named after the Vercel project; .vercel/ inside it keeps
+# the project link between deploys.
+STAGE="$SCRIPT_DIR/.deploy/drat-$ENV_NAME"
+mkdir -p "$STAGE"
+rsync -a --delete --exclude .vercel index.html vercel.json js "$STAGE/"
+cat > "$STAGE/js/deploy-config.js" <<EOF
+// Generated by deploy.sh for ENV=$ENV_NAME. Do not edit; redeploy instead.
+window.DEPLOY_CONFIG = {
+    ENV: "$ENV_NAME",
+    API_BASE: "$API_BASE",
+    COMPLETION_URL: "$COMPLETION_URL",
+};
+EOF
+
+VERCEL_OUT=$(cd "$STAGE" && npx -y vercel --prod --yes --token "$VERCEL_API_KEY" 2>&1 | tee /dev/stderr)
+# Prefer the stable production alias ("Aliased https://...") over the per-deploy URL.
+FRONTEND_URL=$(echo "$VERCEL_OUT" | grep -Eo 'Aliased +https://[^ ]+' | grep -Eo 'https://[^ ]+' | tail -n1)
+[ -n "$FRONTEND_URL" ] || FRONTEND_URL="(not found in Vercel output; see above)"
 
 echo ""
 echo "================================================"
-echo "Deployed: $EXPERIMENT_NAME"
-echo "  Backend:  $BACKEND"
+echo "Deployed ENV=$ENV_NAME"
 echo "  API base: $API_BASE"
 echo "  Frontend: $FRONTEND_URL"
-echo ""
-echo "Study URL for Prolific:"
-echo "  ${FRONTEND_URL}?PROLIFIC_PID={{%PROLIFIC_PID%}}&STUDY_ID={{%STUDY_ID%}}&SESSION_ID={{%SESSION_ID%}}"
+echo "  Test URL: ${FRONTEND_URL}?PROLIFIC_PID=test_<anything>"
 echo "================================================"
