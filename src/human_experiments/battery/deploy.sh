@@ -53,8 +53,19 @@ fi
 TOTAL_SLOTS=$(grep -Eo '"total_slots": *[0-9]+' js/battery-data.js | grep -Eo '[0-9]+$')
 : "${TOTAL_SLOTS:?could not read total_slots from js/battery-data.js}"
 
+# While js/study-config.js has localPreviewOnly: true, the study flow keeps data
+# in the browser and core.js refuses any API_BASE. In that mode we publish the
+# frontend only (no backend deploy, empty API_BASE) — and never to prod.
+PREVIEW_ONLY=$(grep -Eo 'localPreviewOnly: *(true|false)' js/study-config.js | grep -Eo '(true|false)$')
+: "${PREVIEW_ONLY:?could not read localPreviewOnly from js/study-config.js}"
+if [ "$PREVIEW_ONLY" = "true" ] && [ "$ENV_NAME" = "prod" ]; then
+    echo "ERROR: js/study-config.js has localPreviewOnly: true; refusing to deploy prod."
+    exit 1
+fi
+
 echo "================================================"
 echo "Deploying ENV=$ENV_NAME"
+[ "$PREVIEW_ONLY" = "true" ] && echo "  MODE: LOCAL PREVIEW — frontend only; no data reaches Supabase"
 echo "  Supabase project: $SUPABASE_PROJECT_REF"
 echo "  Vercel project:   drat-$ENV_NAME"
 echo "  TOTAL_SLOTS:      $TOTAL_SLOTS"
@@ -65,12 +76,17 @@ if [ "$ENV_NAME" = "prod" ]; then
 fi
 
 # ── Backend ────────────────────────────────────────────────────────────────
-SUPABASE_ACCESS_TOKEN="$SUPABASE_API_KEY" \
-SUPABASE_DB_PASSWORD="$DB_PASSWORD" \
-TOTAL_SLOTS="$TOTAL_SLOTS" \
-DATA_EXPORT_TOKEN="$DATA_EXPORT_TOKEN" \
-    bash backend/supabase/deploy.sh "$SUPABASE_PROJECT_REF"
-API_BASE="https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1"
+if [ "$PREVIEW_ONLY" = "true" ]; then
+    echo "Skipping backend deploy (local preview mode)."
+    API_BASE=""
+else
+    SUPABASE_ACCESS_TOKEN="$SUPABASE_API_KEY" \
+    SUPABASE_DB_PASSWORD="$DB_PASSWORD" \
+    TOTAL_SLOTS="$TOTAL_SLOTS" \
+    DATA_EXPORT_TOKEN="$DATA_EXPORT_TOKEN" \
+        bash backend/supabase/deploy.sh "$SUPABASE_PROJECT_REF"
+    API_BASE="https://${SUPABASE_PROJECT_REF}.supabase.co/functions/v1"
+fi
 
 # ── Frontend: stage only what the browser needs ────────────────────────────
 # The staging dir is named after the Vercel project; .vercel/ inside it keeps
@@ -97,5 +113,5 @@ echo "================================================"
 echo "Deployed ENV=$ENV_NAME"
 echo "  API base: $API_BASE"
 echo "  Frontend: $FRONTEND_URL"
-echo "  Test URL: ${FRONTEND_URL}?PROLIFIC_PID=test_<anything>"
+echo "  Open ${FRONTEND_URL} and enter a TEST- study code"
 echo "================================================"
