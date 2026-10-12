@@ -99,7 +99,10 @@ function showLocalResult(saved) {
             session_number: saved.session_number,
             session_record_id: saved.session_record_id,
             slot: saved.slot,
+            order_index: saved.order_index,
+            order_source: saved.order_source,
             order: saved.order,
+            consent: saved.consent,
             protocol_version: saved.protocol_version,
             complete: saved.complete,
             responses: Object.values(saved.events).map((event) => ({
@@ -118,12 +121,15 @@ function showLocalResult(saved) {
     });
 }
 
-async function startServerSession(studyCode, sessionNumber, protocolVersion) {
+async function startServerSession(studyCode, sessionNumber, protocolVersion, orderIndex, consent) {
     const response = await fetch(`${API_BASE}/start-session`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ protocol_version: protocolVersion, study_code: studyCode,
-                               session_number: sessionNumber }),
+                               session_number: sessionNumber,
+                               session1_order_index: orderIndex,
+                               consent_version: consent?.version ?? null,
+                               consent_accepted_at: consent?.acceptedAt ?? null }),
     });
     const result = await response.json().catch(() => ({}));
     if (!response.ok) {
@@ -158,26 +164,49 @@ async function main() {
         ? (DEPLOY_ENV === "dev" ? "DEV ENVIRONMENT — test data only, saved to the dev database" : "")
         : "LOCAL PREVIEW — deidentified test data stays in this browser";
 
-    const { studyCode, sessionNumber } = await window.requestStudyEntry();
-
+    const params = new URLSearchParams(location.search);
+    const sessionParam = params.get("session");
+    if (sessionParam !== null && sessionParam !== "1" && sessionParam !== "2") {
+        fatal("The session parameter must be 1 or 2.");
+    }
+    const fixedSession = sessionParam === null ? null : Number(sessionParam);
+    let consent = fixedSession === 1 ? await window.requestStudyConsent(study) : null;
+    if (fixedSession === 1 && !consent) return;
+    const { studyCode, sessionNumber } = await window.requestStudyEntry({ sessionNumber: fixedSession });
+    if (sessionNumber === 1 && !consent) {
+        consent = await window.requestStudyConsent(study);
+        if (!consent) return;
+    }
+    let orderIndex = sessionNumber === 1
+        ? window.resolveSession1OrderIndex(location.search)
+        : null;
+    let orderSource = sessionNumber === 1 ? "lab-meeting-url" : "session-2-fixed";
     let slot, order, server = null;
     if (online) {
-        server = await startServerSession(studyCode, sessionNumber, study.protocolVersion);
+        server = await startServerSession(
+            studyCode, sessionNumber, study.protocolVersion, orderIndex, consent,
+        );
         if (server.complete) {
             showServerResult(server.session_record_id, true);
             return;
         }
         slot = server.slot;
         order = server.test_order;
-        // The server picks the order; it must match what this page would build.
+        orderIndex = server.lab_meeting_order_index;
+        orderSource = server.order_source;
+        consent = server.consent_version ? {
+            version: server.consent_version,
+            acceptedAt: server.consent_accepted_at,
+        } : null;
+        // The server persists the meeting order; it must match this station's URL.
         const expectedOrder = sessionNumber === 1
-            ? study.session1Orders[slot % study.session1Orders.length]
+            ? study.session1Orders[orderIndex]
             : ["drat", "sctt"];
         if (JSON.stringify(order) !== JSON.stringify(expectedOrder)) {
             fatal("The server's session order does not match this page. Reload, or ask a researcher.");
         }
     } else {
-        const slotParam = new URLSearchParams(location.search).get("slot");
+        const slotParam = params.get("slot");
         slot = slotParam === null ? 0 : Number(slotParam);
         if (sessionNumber === 2) {
             const firstKey = `thinking-tasks:${study.protocolVersion}:${studyCode}:session-1`;
@@ -190,16 +219,13 @@ async function main() {
             }
             slot = first.slot;
         }
-        order = sessionNumber === 1
-            ? study.session1Orders[slot % study.session1Orders.length]
-            : ["drat", "sctt"];
+        order = sessionNumber === 1 ? study.session1Orders[orderIndex] : ["drat", "sctt"];
     }
     if (!Number.isInteger(slot) || slot < 0 || slot >= materials.assignments.length) {
         fatal("The session slot must match one of the generated assignments.");
     }
-
     const store = window.createStudyStore({
-        studyCode, sessionNumber, slot, order,
+        studyCode, sessionNumber, slot, order, orderIndex, orderSource, consent,
         protocolVersion: study.protocolVersion, apiBase: API_BASE, appVersion: APP_VERSION,
         sessionRecordId: server?.session_record_id ?? null,
         sessionToken: server?.session_token ?? null,
@@ -220,7 +246,7 @@ async function main() {
 
     const jsPsych = initJsPsych();
     const ctx = {
-        jsPsych, participantId: studyCode, slot, order,
+        jsPsych, participantId: studyCode, slot, order, orderIndex,
         config, seededShuffle, makeCountdown: window.makeCountdown,
         ravenUrl: study.ravenUrl,
     };

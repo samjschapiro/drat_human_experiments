@@ -10,7 +10,7 @@ window.STUDY_MODULES.bfi10 = function buildBfi10() {
                      "Agree a little", "Agree strongly"];
     const row = (id, text) => `<fieldset style="margin:14px 0;border:1px solid #ddd">
         <legend>${text}</legend>${choices.map((label, index) =>
-            `<label style="display:inline-block;margin:5px 9px"><input type="radio" name="${id}" value="${index + 1}"> ${label}</label>`
+            `<label style="display:inline-block;margin:5px 9px"><input type="radio" name="${id}" value="${index + 1}" required> ${label}</label>`
         ).join("")}</fieldset>`;
     const rows = items.map((text, index) => {
         const question = row(`bfi_${index + 1}`, `${index + 1}. I see myself as someone who ${text}.`);

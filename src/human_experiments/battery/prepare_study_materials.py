@@ -188,7 +188,7 @@ def main() -> None:
     triplets, pairs = read_materials(args.materials_dir)
     assignments = generate_assignments(triplets, pairs, args.count)
     payload = {
-        "protocol_version": "drat-human-2026-v1",
+        "protocol_version": "drat-human-2026-v2",
         "triplets": triplets,
         "pairs": pairs,
         "assignments": assignments,

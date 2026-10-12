@@ -33,12 +33,12 @@ replications_per_cell: 5
 tests:
   dat:
     n_words: 10
-    time_limit_sec: 240           # 4-minute cap (Olson et al. 2021)
+    time_limit_sec: 240           # fixed 4-minute exposure (Olson et al. 2021)
   rat:
     item_bank: item_banks/rat_cra_144.json
     n_items: 30                   # seeded subsample of the 144 (null = all 144)
     item_select: easiest          # easiest | hardest | random (by norm_rank)
-    item_time_limit_sec: 15       # per-item deadline
+    item_time_limit_sec: 15       # fixed per-item exposure
   sctt:
     item_bank: item_banks/sctt_beaty_2026.json
     n_responses_per_item: 3       # Beaty design fixes this at 3

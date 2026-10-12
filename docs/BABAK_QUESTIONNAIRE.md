@@ -2,6 +2,10 @@
 
 Updated: October 2, 2026
 
+> Historical pre-meeting checklist. The October 2/7 answers and current unresolved
+> items are consolidated in `docs/NEXT_PHASE_IMPLEMENTATION_PLAN.md`; do not use the
+> URL/embed questions below as the current status.
+
 ## Purpose
 
 These are the decisions and materials required from Babak/the study team before the

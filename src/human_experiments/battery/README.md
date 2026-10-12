@@ -1,11 +1,11 @@
 # Creativity Battery (DAT · RAT · SCTT · DRAT)
 
-## Current two-session local prototype
+## Current two-session development build
 
-The `feature/drat-study-flow` branch implements the approved local study flow on
-top of the Supabase/Vercel deployment branch. It is deliberately blocked from
-production use until the study team supplies the final Q-global URL and approves
-the participant wording and backend save contract.
+The `prit/drat-study-flow` branch implements the approved study flow on top of the
+Supabase/Vercel deployment branch. It is deliberately blocked from production use
+until Wasiq's session/event backend is connected and the study team approves the
+supervised development pilot.
 
 Run it locally from this directory:
 
@@ -13,17 +13,36 @@ Run it locally from this directory:
 python3 -m http.server 8001
 ```
 
-Then open `http://127.0.0.1:8001/?session=1&slot=0` or
+Then open `http://127.0.0.1:8001/?session=1&order=2&slot=0` or
 `http://127.0.0.1:8001/?session=2&slot=0`. Enter the same deidentified study code
-for both sessions. `slot` may be 0–259 and selects a reproducible counterbalance /
-DRAT assignment. Each completed task is saved synchronously in browser storage;
-the completion screen downloads a deidentified JSON file. A refresh resumes at
-the first unsaved task.
+for both sessions. Session 1 requires `order=1` through `order=6`; every station in
+one lab meeting must use the same value. `slot` may be 0–259 and selects only the
+reproducible DRAT assignment. Each completed task is saved synchronously in browser
+storage; the completion screen downloads a deidentified JSON file. A refresh
+resumes at the first unsaved task.
 
-Session 1 runs counterbalanced DAT, RAT, and the Raven handoff, followed by BFI-10
-and demographics. Session 2 runs all eight DRAT design cells, a break, the orange
-attention check, and the 12-item SCTT. Local Raven is a placeholder because the
-licensed Q-global URL has not been supplied.
+| Lab order | Session 1 URL suffix | Task order |
+|---|---|---|
+| 1 | `?session=1&order=1` | DAT → RAT → Raven |
+| 2 | `?session=1&order=2` | DAT → Raven → RAT |
+| 3 | `?session=1&order=3` | RAT → DAT → Raven |
+| 4 | `?session=1&order=4` | RAT → Raven → DAT |
+| 5 | `?session=1&order=5` | Raven → DAT → RAT |
+| 6 | `?session=1&order=6` | Raven → RAT → DAT |
+
+Use orders 1–4 for the first supervised pilot so Raven is second or third. Append a
+local `slot=0..259` only for local testing; production slot assignment belongs to
+the backend.
+
+Session 1 shows the approved stamped consent PDF, then runs DAT, RAT, and the Raven
+handoff in the meeting's fixed order, followed by BFI-10 and demographics. Raven
+opens Pearson Q-global self-registration in a new tab; the current group code is
+given verbally by the researcher and is never stored in the app. Session 2 runs all
+eight DRAT design cells, a break, the orange attention check, and the 12-item SCTT.
+On every protocol-timed screen, Submit is locked for the full duration and the
+current response auto-submits at zero: DAT 4 minutes, each RAT item 15 seconds, and
+each DRAT block 2 minutes. Raven, BFI-10, demographics, SCTT, consent, and breaks
+remain external or self-paced because the approved protocol defines no timer for them.
 
 Score both local downloads together:
 
@@ -114,11 +133,9 @@ python score_battery.py --input ../data/prod/battery_raw.json --glove glove-wiki
   `order_policy` (`latin_square` | `full_permutations` | `explicit`) decides how
   test order is counterbalanced. The order list is precomputed by `prepare_battery.py`
   and shipped in `BATTERY_CONFIG.orders`.
-- **Slot = balanced counter.** The backend's `claim_slot()` (atomic, idempotent,
-  dropout-self-healing) is reused unchanged. `core.js` decodes the integer slot into
-  `orderIndex = slot % n_orders` and `anchorSetIndex = ⌊slot/n_orders⌋ % n_anchor_sets`,
-  so order × DRAT-anchor-set stay jointly balanced. `TOTAL_SLOTS` must equal
-  `n_orders × n_anchor_sets × replications_per_cell`.
+- **Meeting order is explicit.** Session 1 reads `order=1..6` from the fixed lab URL;
+  it is not derived from the participant slot. The slot remains the stable index
+  into the 260 validated DRAT assignments used by Session 2.
 - **One JSON per session.** On finish, `core.js` POSTs `{participant_id, slot,
   order_index, order, anchor_set_index, responses:[…], client_metadata}`. Each
   `responses[i]` is one test trial (`test, item_id, response, rt, timed_out`).
