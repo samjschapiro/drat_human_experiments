@@ -8,10 +8,10 @@ This document contains the deployment work needed to move the completed local
 two-session study flow onto the existing Supabase + Vercel infrastructure.
 It is written for Wasiq, who owns deployment and backend integration.
 
-The current branch is **not safe to deploy unchanged**. The participant flow is
-implemented and locally verified, but production mode is deliberately locked until
-the incremental-save backend, server-side session gate, and study-team decisions
-listed below are complete.
+The integration branch is ready for an isolated **development** deployment. It
+combines the locally verified participant flow with Wasiq's session/event backend.
+Production mode remains deliberately locked until the development acceptance run
+and study-team decisions listed below are complete.
 
 ## Code to integrate
 
@@ -19,14 +19,17 @@ listed below are complete.
 |---|---|
 | Repository | `https://github.com/samjschapiro/drat_human_experiments` |
 | Wasiq deployment PR | `https://github.com/samjschapiro/drat_human_experiments/pull/2` |
-| Review branch | `prit/drat-study-flow` |
-| Branch URL | `https://github.com/samjschapiro/drat_human_experiments/tree/prit/drat-study-flow` |
-| Verified deployment baseline | `a17ad14` (`origin/deploy-fixes`, PR #2) |
+| Frontend branch | `prit/drat-study-flow` (`930c721`) |
+| Integration branch | `prit/study-backend-integration` |
+| Integration base | `7057ec7` (`wasiq/session-backend`) |
+| Verified deployment baseline | `009b16c` (`main`, merged PR #2) |
 | Study-flow commit | `95c6119` — local two-session flow |
 | Completion commit | `c9ace09` — Session 2 gate and scoring pipeline |
-| Upstream main | `9f1f4fa` (`origin/main`) |
+| Frontend completion | `930c721` — consent, fixed order, Pearson handoff, validation, hard timers |
+| Backend completion | `7057ec7` — study codes, session/event saves, server gating, admin/export |
+| Upstream main | `009b16c` (`origin/main`) |
 
-The review branch is separate from `main`. Nothing from it has been merged or
+The integration branch is separate from `main`. Nothing from it has been merged or
 deployed, and production remains deliberately locked.
 
 ## What Wasiq already completed in PR #2
@@ -104,38 +107,28 @@ and documents an approved automated Pearson integration, the supported workflow 
 a supervised external handoff followed by a manual deidentified score export and
 offline merge.
 
-## Follow-up required for the two-session flow
+## Two-session backend now integrated
 
-These are new requirements introduced by Prit's two-session implementation. They
-were explicitly outside PR #2 and should not be read as defects in Wasiq's completed
-work.
+Wasiq's `wasiq/session-backend` work and Prit's October 12 frontend are combined on
+the integration branch. It now provides:
 
-1. The existing Supabase backend stores one completed submission. The new client
-   saves one event after every task and therefore needs session and event storage.
-2. `/save-block` does not exist in the current Supabase functions.
-3. Session completion is only marked in browser storage; the backend needs a
-   completion operation.
-4. Slot assignment is still local/URL-based in the new flow. Production must assign
-   or retrieve the slot from the server by deidentified study code.
-5. Session 2 is gated by local browser storage only. The backend must independently
-   verify that Session 1 is complete.
-6. The current migration seeds 160 slots while the study material bundle contains
-   260 assignments. `js/battery-data.js` also still reports 160 slots.
-7. PR #2 correctly removed the source-IP field, but the inherited `submissions`
-   schema still has `user_agent` and `submit-data` still populates it. The new study
-   schema and functions must omit both user-agent and source IP.
-8. `js/study-config.js` has `localPreviewOnly: true`, and `js/core.js` deliberately
-   rejects a configured API and all production runs.
-9. The authorized offline mapping between the Thinking Tasks study code and
-   Pearson's participant record is not confirmed and must remain outside the app.
-10. Pearson's real deidentified score-export columns and standardized-score field
-    have not been supplied, so the generic CSV importer is not yet a verified
-    Q-global adapter.
-11. The deployment scripts still deploy the inherited `get-slot` / `submit-data`
-    functions and print a Prolific-style test URL. They do not yet deploy the new
-    session/event endpoints.
-12. The start/resume contract does not yet define approved study-code authorization
-    or return the server-side event inventory needed to resume on another device.
+1. an issued-code allowlist plus researcher code generation/import/reset commands;
+2. 260 server-assigned DRAT slots;
+3. `/start-session` with resume inventory, rotating bearer token, and server-side
+   Session 1 → Session 2 enforcement;
+4. per-task idempotent `/save-block` rows with conflict rejection;
+5. `/finish-session` checks for exactly 35 Session 1 or 22 Session 2 events;
+6. protected paginated export of sessions and events;
+7. a generated backend manifest tied to the same v2 browser materials;
+8. persistence and validation of the fixed lab-meeting order and stamped-consent
+   version/timestamp; and
+9. dev deployment support with production still explicitly blocked in `core.js`.
+
+The remaining work is operational rather than another backend redesign: deploy the
+integration branch to dev, seed test codes, execute the acceptance matrix, verify
+exports/scoring, and obtain the unresolved Pearson and study-code policy decisions.
+The authorized Pearson identity mapping and group session code must remain outside
+the application and repository.
 
 ## Recommended production data flow
 
@@ -184,11 +177,9 @@ Request:
   "protocol_version": "drat-human-2026-v2",
   "study_code": "DRAT-001",
   "session_number": 1,
-  "lab_meeting_order_index": 1,
-  "consent": {
-    "version": "Consent_DRAT_v3_tracked",
-    "accepted_at": "ISO-8601 timestamp"
-  }
+  "session1_order_index": 1,
+  "consent_version": "Consent_DRAT_v3_tracked",
+  "consent_accepted_at": "ISO-8601 timestamp"
 }
 ```
 
@@ -202,7 +193,10 @@ Response:
   "slot": 17,
   "session_number": 1,
   "lab_meeting_order_index": 1,
+  "order_source": "lab-meeting-url",
   "test_order": ["dat", "raven", "rat"],
+  "consent_version": "Consent_DRAT_v3_tracked",
+  "consent_accepted_at": "ISO-8601 timestamp",
   "saved_item_ids": [],
   "complete": false
 }

@@ -7,6 +7,7 @@ import manifest from "./study_manifest.json" with { type: "json" };
 
 export const MANIFEST = manifest as {
     protocol_version: string;
+    consent_version: string;
     n_slots: number;
     session1_orders: string[][];
     session2_order: string[];
@@ -101,6 +102,10 @@ export interface SessionRow {
     session_number: number;
     slot: number;
     test_order: string[];
+    lab_meeting_order_index: number | null;
+    order_source: "lab-meeting-url" | "session-2-fixed";
+    consent_version: string | null;
+    consent_accepted_at: string | null;
     complete: boolean;
     reset_at: string | null;
 }
@@ -111,7 +116,8 @@ export async function sessionForToken(req: Request): Promise<SessionRow | Respon
     if (!token) return error(401, "missing_token", "session token required");
     const { data, error: err } = await db()
         .from("study_sessions")
-        .select("id, study_code, session_number, slot, test_order, complete, reset_at")
+        .select("id, study_code, session_number, slot, test_order, lab_meeting_order_index, " +
+                "order_source, consent_version, consent_accepted_at, complete, reset_at")
         .eq("session_token_hash", await sha256Hex(token))
         .is("reset_at", null)
         .maybeSingle();
@@ -123,5 +129,5 @@ export async function sessionForToken(req: Request): Promise<SessionRow | Respon
         return error(401, "invalid_token",
             "This session was reopened on another computer or reset by a researcher. Ask a researcher for help.");
     }
-    return data as SessionRow;
+    return data as unknown as SessionRow;
 }

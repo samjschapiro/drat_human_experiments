@@ -2,10 +2,10 @@
 
 ## Current two-session development build
 
-The `prit/drat-study-flow` branch implements the approved study flow on top of the
-Supabase/Vercel deployment branch. It is deliberately blocked from production use
-until Wasiq's session/event backend is connected and the study team approves the
-supervised development pilot.
+The `prit/study-backend-integration` branch combines the approved study flow with
+Wasiq's Supabase session/event backend. Development deployment is ready for the
+supervised pilot; production remains deliberately blocked in `core.js` until the
+study team approves launch.
 
 Run it locally from this directory:
 
@@ -54,7 +54,7 @@ python score_battery.py \
 
 This produces raw audit outputs plus RAT/BFI/SCTT-fluency scores. Add the explicit
 GloVe/FastText/SBERT and approved random-noun-pool arguments documented in
-`scoring/README.md` for final DAT/DRAT scores. Production connection and remaining approval gates are tracked in
+`scoring/README.md` for final DAT/DRAT scores. Development deployment and remaining approval gates are tracked in
 [`docs/HANDOFF.md`](../../../docs/HANDOFF.md).
 
 A configurable, **within-subjects** battery of four creativity/cognition tests,
@@ -96,35 +96,30 @@ battery/
 ## Quickstart
 
 ```bash
-# 1. Configure the battery (which tests, order policy, timings) and DRAT anchors
-$EDITOR battery_config.example.yaml
-$EDITOR item_banks/drat_anchors.example.json   # → save as drat_anchors.json
-$EDITOR item_banks/drat_noun_pool.example.txt  # → save as drat_noun_pool.txt
+# 1. Test locally, then open http://127.0.0.1:8001/?session=1&order=2&slot=0
+python3 -m http.server 8001
 
-# 2. Generate the client bundle. Note the printed TOTAL_SLOTS.
-python prepare_battery.py --config battery_config.example.yaml
+# 2. Verify the browser/backend manifest before deployment.
+python3 prepare_backend_manifest.py
 
-# 3. The bundle's TOTAL_SLOTS must match the generate_series bound in
-#    backend/supabase/migrations/*_init.sql (upper bound = TOTAL_SLOTS - 1);
-#    the deploy checks this.
-
-# 4. Test locally: `python3 -m http.server` in this folder, open it with no
-#    PROLIFIC_PID → debug mode (slot 0, nothing saved; payload logged to console).
-
-# 5. Deploy. Two environments, each its own Supabase project + Vercel project:
+# 3. Deploy. Two environments, each its own Supabase project + Vercel project:
 #      dev  → https://drat-dev.vercel.app   test data only; shows a DEV banner
 #      prod → participants; never wipe; deploy asks you to type 'prod'
 #    Settings live in gitignored files at the repo root (template: .env.example):
 #      .env       SUPABASE_API_KEY, VERCEL_API_KEY (shared)
-#      .env.dev   SUPABASE_PROJECT_REF, DB_PASSWORD, DATA_EXPORT_TOKEN, COMPLETION_URL
+#      .env.dev   SUPABASE_PROJECT_REF, DB_PASSWORD, DATA_EXPORT_TOKEN
 #      .env.prod  same keys, prod values (a different DATA_EXPORT_TOKEN)
 bash deploy.sh dev        # migrations, secrets, functions, staged frontend, vercel --prod
-#    Test: https://drat-dev.vercel.app/?PROLIFIC_PID=test_<anything>
 
-# 6. Collect + score (→ data/<env>/battery_raw_<timestamp>.json + battery.csv)
+# 4. Generate development codes and test both session URLs.
+bash admin.sh dev generate 2 TEST
+# https://drat-dev.vercel.app/?session=1&order=2
+# https://drat-dev.vercel.app/?session=2
+
+# 5. Export and score.
 bash get_data.sh dev
 cd scoring && pip install -r requirements.txt
-python score_battery.py --input ../data/prod/battery_raw.json --glove glove-wiki-gigaword-300
+python score_battery.py --input ../data/dev/battery_sessions.json
 ```
 
 ## How it works
@@ -136,9 +131,10 @@ python score_battery.py --input ../data/prod/battery_raw.json --glove glove-wiki
 - **Meeting order is explicit.** Session 1 reads `order=1..6` from the fixed lab URL;
   it is not derived from the participant slot. The slot remains the stable index
   into the 260 validated DRAT assignments used by Session 2.
-- **One JSON per session.** On finish, `core.js` POSTs `{participant_id, slot,
-  order_index, order, anchor_set_index, responses:[…], client_metadata}`. Each
-  `responses[i]` is one test trial (`test, item_id, response, rt, timed_out`).
+- **Incremental session storage.** `/start-session` validates a pre-issued code and
+  returns the stable slot, meeting order, resume inventory, and session token.
+  Every task is saved idempotently through `/save-block`; `/finish-session` closes
+  only a complete 35- or 22-event session.
 - **Answer keys never ship.** `prepare_battery.py` strips RAT solutions from the
   bundle; the scorer reads them from `item_banks/`.
 

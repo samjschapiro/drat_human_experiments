@@ -13,15 +13,13 @@ Detailed handoffs:
 
 ## Current state
 
-- Work is isolated on branch `prit/drat-study-flow`, based on Wasiq's deployment
-  changes. The repository's `main` branch remains unchanged.
-- `docs/WASIQ_DEPLOYMENT_HANDOFF.md` has been reconciled against Wasiq's PR #2
-  through commit `a17ad14`; it now distinguishes his completed deployment baseline
-  from the additional backend work required by Prit's two-session flow.
-- Earlier study-flow commits are published separately for collaboration; the
-  October 12 implementation in this working tree is not yet committed or pushed.
-  Nothing has been merged or deployed.
-- The app is a local-only two-session development build. Production mode fails loudly.
+- `prit/drat-study-flow` publishes Prit's verified frontend through commit `930c721`.
+- `prit/study-backend-integration` is based on Wasiq's `wasiq/session-backend`
+  commit `7057ec7` and combines the two-session backend with the October 12
+  consent, fixed-order, Pearson, validation, and hard-timer work.
+- `main` remains unchanged by this integration. Nothing here has been deployed.
+- The combined app supports local preview and a Supabase-backed development
+  deployment. Production mode still fails loudly pending study-team approval.
 
 ## Implemented
 
@@ -67,18 +65,21 @@ Detailed handoffs:
   check with no console warnings/errors.
 - A live RAT browser check confirmed that Submit remained disabled, Enter could not
   advance, zero triggered automatic submission, and the next item locked again.
+- The integrated event store test verifies the bearer token, v2 event ID, meeting
+  order, consent audit fields, application version, incremental save, and finish call.
+- The regenerated backend manifest reports 260 slots, 35 Session 1 items, and 22
+  Session 2 items. JavaScript syntax, Python compilation, and shell syntax pass.
 
-## Backend contract for Wasiq
+## Integrated backend status
 
-The client is ready to POST each event to `/save-block`. The server must make
-`event_id` idempotent, group rows by `(study_code, session_number)`, return a
-stable `session_record_id`, and preserve the JSON fields produced by
-`js/save-client.js`. The production database needs 260 assignment slots rather
-than the current deployment migration's 160. The inherited `submit-data`
-backends still capture request IP and/or user-agent metadata; remove those fields
-before production so they never enter the research record.
-The production endpoint must also enforce the completed-Session-1 prerequisite;
-the local browser gate is not a security boundary.
+The integration branch now includes Wasiq's issued-code allowlist, 260-slot schema,
+server-issued session tokens, `/start-session`, idempotent `/save-block`, strict
+`/finish-session`, server-side Session 2 gating, protected exports, and researcher
+admin/reset tooling. The October 12 migration additionally persists and validates
+the operator-selected Session 1 order and consent version/timestamp. Saved events
+must match the server session's code, slot, order, consent, item manifest, and v2
+event ID. No IP address, browser user-agent, Pearson group code, or Pearson personal
+information is stored.
 
 ## Required decisions before deployment
 
@@ -88,11 +89,11 @@ room-level Session 1 ordering, supervised spoken Raven instructions, and the
 manual-response/timeout rule. Pearson's `SAMEORIGIN` response header rules out an
 iframe, so the frontend now uses a deliberate new-tab launch. Remaining decisions
 include one versus paired study codes, Raven interruption recovery, Pearson export
-linkage/score field, and the station reset procedure. Wasiq must implement and test
-the server-side session/event contract, protected export, 260-slot migration, and
-dev deployment. Prit's approved frontend changes are complete locally; the remaining
-Prit work is connecting them to Wasiq's contract and verifying scoring/export. The
-study team must approve an end-to-end dev pilot before any participant launch.
+linkage/score field, and the station reset procedure. The next engineering step is
+deploying this integration branch to the isolated development environment and
+running the two-session acceptance matrix against Supabase. The study team must
+approve that supervised dev pilot before any production deployment or participant
+launch.
 
 ## Supplied-material coverage
 

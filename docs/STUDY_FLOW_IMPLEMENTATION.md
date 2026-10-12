@@ -54,9 +54,11 @@ unmodified copy of `main`.
 |---|---|
 | `95c6119` | Implemented the local two-session study flow, generated DRAT assignments, incremental capture, questionnaires, Raven handoff, and linked-session export |
 | `c9ace09` | Enforced the Session 1 prerequisite, completed DRAT/SCTT administration and scoring integration, validated supplied data, and documented deployment requirements |
+| `930c721` | Added stamped consent, fixed meeting-order URLs, the Pearson handoff, response validation, hard timers, tests, and v2 documentation |
+| `7057ec7` | Added Wasiq's issued-code, session/event, server-gating, admin, and export backend |
 
-Both implementation commits are included on the review branch
-`prit/drat-study-flow`. They have not been merged or deployed.
+The combined implementation is on `prit/study-backend-integration`. It has not been
+merged or deployed.
 
 ## Resulting participant flow
 
@@ -312,8 +314,8 @@ stamped consent PDF required for the in-app Session 1 consent gate.
 
 ## Intentionally not implemented
 
-- Production Supabase integration and deployment; this belongs to the deployment
-  workstream.
+- Production deployment or participant launch. The Supabase integration is present,
+  but only an isolated development deployment and supervised pilot are authorized.
 - Pearson identity linkage, interrupted-assessment recovery, station reset, real
   export normalization, and any separately approved automated Q-global integration.
 - Final DRAT numeric research scoring without the missing approved pool/embeddings.
@@ -344,8 +346,9 @@ Final embedding-based options and CAP round-trip instructions are in
 
 ## Current boundary
 
-The participant-facing study behavior is complete against the supplied materials
-and has passed local acceptance testing. The next engineering boundary is production
-integration: server-authoritative assignment, incremental persistence, completion,
-Session 2 gating, secure export, and dev deployment. Those requirements are captured
-in `docs/WASIQ_DEPLOYMENT_HANDOFF.md`.
+The participant-facing study behavior and two-session Supabase contract are combined
+on `prit/study-backend-integration`. The next boundary is an isolated development
+deployment: seed test codes, run both sessions through Supabase, exercise refresh,
+resume, mismatch, and reset paths, verify the protected export/scoring round trip,
+and obtain study-team approval. The acceptance steps are captured in
+`docs/WASIQ_DEPLOYMENT_HANDOFF.md`.

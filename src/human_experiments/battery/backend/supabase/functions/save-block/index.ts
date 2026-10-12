@@ -36,11 +36,21 @@ serve(async (req) => {
     if (JSON.stringify(event.assignment?.test_order) !== JSON.stringify(session.test_order)) {
         mismatches.push("assignment.test_order");
     }
+    if (event.assignment?.lab_meeting_order_index !== session.lab_meeting_order_index) {
+        mismatches.push("assignment.lab_meeting_order_index");
+    }
+    if (event.assignment?.order_source !== session.order_source) {
+        mismatches.push("assignment.order_source");
+    }
+    if (event.consent_version !== session.consent_version) mismatches.push("consent_version");
+    if (event.consent_accepted_at !== session.consent_accepted_at) {
+        mismatches.push("consent_accepted_at");
+    }
     const expected = expectedItems(session.session_number, session.slot);
     const itemId = event.item_id;
     if (typeof itemId !== "string" || !expected.has(itemId)) mismatches.push("item_id");
     else if (event.test_id !== expected.get(itemId)) mismatches.push("test_id");
-    if (event.event_id !== `${session.study_code}:${session.session_number}:${itemId}`) {
+    if (event.event_id !== `${MANIFEST.protocol_version}:${session.study_code}:${session.session_number}:${itemId}`) {
         mismatches.push("event_id");
     }
     if (mismatches.length) {

@@ -1,7 +1,7 @@
 # Next-phase implementation plan
 
 Updated: October 12, 2026
-Status: **approved by Prit; frontend phases 1–4 implemented locally, phases 5–7 pending external integration/pilot work**
+Status: **approved by Prit; frontend and backend integration implemented, development deployment/pilot pending**
 
 ## Implementation progress — October 12, 2026
 
@@ -11,9 +11,12 @@ Status: **approved by Prit; frontend phases 1–4 implemented locally, phases 5�
 - Verified: Pearson blocks cross-site framing with `X-Frame-Options: SAMEORIGIN`, so
   new-tab launch is the explicit implementation; local browser checks passed for
   consent decline/agreement, order 2, blank DAT rejection, and Raven link gating.
-- Still pending: Wasiq's production session/event endpoints and dev deployment,
-  Babak's deidentified Pearson score export/score-field decision, station reset and
-  interrupted-Raven procedure, and the supervised pilot.
+- Integrated: issued-code validation, session/event storage, server-side Session 2
+  gate, fixed meeting-order validation, consent audit fields, protected export, and
+  researcher reset/code tooling.
+- Still pending: development deployment, Babak's deidentified Pearson score
+  export/score-field decision, station reset and interrupted-Raven procedure, and
+  the supervised pilot.
 
 ## Purpose
 

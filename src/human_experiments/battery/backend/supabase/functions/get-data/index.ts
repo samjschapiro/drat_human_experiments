@@ -32,7 +32,8 @@ serve(async (req) => {
 
     try {
         const sessions = await selectAll("study_sessions",
-            "id, study_code, session_number, slot, protocol_version, test_order, complete, " +
+            "id, study_code, session_number, slot, protocol_version, test_order, " +
+            "lab_meeting_order_index, order_source, consent_version, consent_accepted_at, complete, " +
             "created_at, updated_at, completed_at, reset_at, reset_reason",
             ["created_at", "id"]);
         const events = await selectAll("study_events",

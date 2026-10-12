@@ -4,7 +4,7 @@
 
 Reads js/study-config.js, js/study-materials.js and js/battery-data.js and writes
 backend/supabase/functions/_shared/study_manifest.json, which the Edge Functions
-use to (a) assign the Session 1 test order for a slot and (b) check that every
+use to validate the operator-selected Session 1 order and check that every
 saved item and every completed session matches exactly what the browser shows.
 deploy.sh runs this before every backend deploy, so the two cannot drift.
 """
@@ -35,14 +35,19 @@ def read_js_object(path: Path, global_name: str) -> dict:
 
 
 def read_study_config(path: Path) -> dict:
-    """study-config.js is a JS literal, not JSON; pull out the two fields we need."""
+    """study-config.js is a JS literal, not JSON; pull out the fields we need."""
     text = path.read_text()
     version = re.search(r'protocolVersion:\s*"([^"]+)"', text)
+    consent = re.search(r'consentVersion:\s*"([^"]+)"', text)
     orders = re.search(r"session1Orders:\s*(\[.*?\],?\s*\])\s*,", text, re.S)
-    if not version or not orders:
-        raise SystemExit(f"{path}: protocolVersion or session1Orders not found")
+    if not version or not consent or not orders:
+        raise SystemExit(f"{path}: protocolVersion, consentVersion or session1Orders not found")
     orders_json = re.sub(r",\s*\]", "]", orders.group(1))  # drop JS trailing commas
-    return {"protocol_version": version.group(1), "session1_orders": json.loads(orders_json)}
+    return {
+        "protocol_version": version.group(1),
+        "consent_version": consent.group(1),
+        "session1_orders": json.loads(orders_json),
+    }
 
 
 def main() -> None:
@@ -72,6 +77,7 @@ def main() -> None:
 
     manifest = {
         "protocol_version": config["protocol_version"],
+        "consent_version": config["consent_version"],
         "n_slots": len(drat_by_slot),
         "session1_orders": config["session1_orders"],
         "session2_order": SESSION2_ORDER,
