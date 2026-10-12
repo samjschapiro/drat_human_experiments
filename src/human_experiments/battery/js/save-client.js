@@ -1,17 +1,23 @@
 /* Synchronous local capture; optional retryable /save-block transport for dev later. */
-window.createStudyStore = function createStudyStore({ studyCode, sessionNumber, slot, order, protocolVersion, apiBase }) {
+window.createStudyStore = function createStudyStore({
+    studyCode, sessionNumber, slot, order, orderIndex, orderSource, consent, protocolVersion, apiBase,
+}) {
     const key = `thinking-tasks:${protocolVersion}:${studyCode}:session-${sessionNumber}`;
     const saved = JSON.parse(localStorage.getItem(key) || "null") || {
         study_code: studyCode,
         session_number: sessionNumber,
         session_record_id: `local-${studyCode}-s${sessionNumber}`,
         slot,
+        order_index: orderIndex,
+        order_source: orderSource,
         order,
+        consent: consent ? { version: consent.version, accepted_at: consent.acceptedAt } : null,
         protocol_version: protocolVersion,
         events: {},
         complete: false,
     };
-    if (saved.slot !== slot || JSON.stringify(saved.order) !== JSON.stringify(order)) {
+    if (saved.slot !== slot || saved.order_index !== orderIndex || saved.order_source !== orderSource ||
+        JSON.stringify(saved.order) !== JSON.stringify(order)) {
         throw new Error("Saved session assignment differs from the current assignment; ask a researcher to review it.");
     }
     let flushing = null;
@@ -48,7 +54,7 @@ window.createStudyStore = function createStudyStore({ studyCode, sessionNumber, 
         record(response, startedAt, completedAt) {
             const localKey = `${sessionNumber}:${response.item_id}`;
             if (saved.events[localKey]) return;
-            const eventId = `${studyCode}:${localKey}`;
+            const eventId = `${protocolVersion}:${studyCode}:${localKey}`;
             const payload = {
                 protocol_version: protocolVersion,
                 study_code: studyCode,
@@ -58,7 +64,8 @@ window.createStudyStore = function createStudyStore({ studyCode, sessionNumber, 
                 test_id: response.test,
                 block_id: response.item_id,
                 item_id: response.item_id,
-                assignment: { slot, test_order: order, presentation_index: response.presentation_index ?? null,
+                assignment: { slot, lab_meeting_order_index: orderIndex, order_source: orderSource,
+                              test_order: order, presentation_index: response.presentation_index ?? null,
                               anchor_size: response.anchor_size ?? null, relation: response.relation ?? null,
                               source_triplet_id: response.triplet_id ?? null },
                 displayed_stimuli: response.displayed_stimuli ?? {},
@@ -73,7 +80,9 @@ window.createStudyStore = function createStudyStore({ studyCode, sessionNumber, 
                 response_time_ms: response.rt ?? null,
                 timed_out: response.timed_out ?? false,
                 attention_check: response.attention_check ?? null,
-                app_version: "local-study-prototype",
+                consent_version: saved.consent?.version ?? null,
+                consent_accepted_at: saved.consent?.accepted_at ?? null,
+                app_version: "meeting-flow-v2",
             };
             saved.events[localKey] = { payload, synced: false };
             // The write completes before jsPsych advances to the next trial.

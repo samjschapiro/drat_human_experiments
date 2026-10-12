@@ -4,7 +4,7 @@ window.STUDY_MODULES.orangeCheck = function buildOrangeCheck() {
     return [{
         type: jsPsychSurveyText,
         preamble: `<p>${prompt}</p>`,
-        questions: [{ prompt: "", name: "answer", required: false }],
+        questions: [{ prompt: "", name: "answer", required: true }],
         button_label: "Continue",
         data: { test: "attention", item_id: "attention_orange", battery_tag: "task",
                 displayed_stimuli: { prompt } },

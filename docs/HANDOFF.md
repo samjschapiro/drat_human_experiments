@@ -1,24 +1,41 @@
 # DRAT study-flow handoff
 
-Updated: October 2, 2026
+Updated: October 12, 2026
 
 Detailed handoffs:
 
+- `docs/NEXT_PHASE_IMPLEMENTATION_PLAN.md` — approved post-meeting plan covering consent,
+  meeting-level task order, Pearson self-registration, response validation, backend
+  integration, score linkage, and pilot acceptance.
 - `docs/WASIQ_DEPLOYMENT_HANDOFF.md` — production integration and deployment.
 - `docs/STUDY_FLOW_IMPLEMENTATION.md` — complete implementation record.
-- `docs/BABAK_QUESTIONNAIRE.md` — supervisor decisions and supplied-material blockers.
+- `docs/BABAK_QUESTIONNAIRE.md` — historical pre-meeting question list.
 
 ## Current state
 
 - Work is isolated on branch `prit/drat-study-flow`, based on Wasiq's deployment
   changes. The repository's `main` branch remains unchanged.
-- The review branch is published separately for collaboration; nothing has been
-  merged or deployed.
-- The app is a local-only two-session prototype. Production mode fails loudly.
+- `docs/WASIQ_DEPLOYMENT_HANDOFF.md` has been reconciled against Wasiq's PR #2
+  through commit `a17ad14`; it now distinguishes his completed deployment baseline
+  from the additional backend work required by Prit's two-session flow.
+- Earlier study-flow commits are published separately for collaboration; the
+  October 12 implementation in this working tree is not yet committed or pushed.
+  Nothing has been merged or deployed.
+- The app is a local-only two-session development build. Production mode fails loudly.
 
 ## Implemented
 
 - Deidentified study-code entry, Session 1/2 routing, and resumable browser saves.
+- Stamped Session 1 consent PDF with explicit agree/decline; decline creates no
+  session record.
+- Six strict `order=1..6` lab-meeting URLs; Session 1 order is no longer derived
+  from the participant's DRAT assignment slot.
+- Pearson Q-global self-registration opens in a supervised new tab. The app stores
+  neither the fresh group code nor Pearson-requested personal details, and records
+  return as participant self-report only.
+- Every timed task is a hard minimum-exposure screen: DAT stays for 4 minutes, each
+  RAT item for 15 seconds, and each DRAT block for 2 minutes. Submit and Enter-key
+  bypasses are blocked until the current response auto-submits at zero.
 - Session 2 is locally locked until the same study code has a completed Session 1;
   it automatically reuses Session 1's assignment slot.
 - Session 1: six-way DAT/RAT/Raven counterbalancing, BFI-10, instructed-response
@@ -43,7 +60,13 @@ Detailed handoffs:
   Session 1, rejects a mismatched slot, and inherits the completed assignment.
 - Refreshing after the first DAT save resumes without duplicating the event.
 - Synthetic linked-session scoring covers the three-model DRAT composite and CAP
-  SCTT score import; the material generator reproduces all 260 assignments.
+  SCTT score import. The v2 material bundle was checksum-verified to differ from the
+  validated v1 bundle only by the protocol label; full regeneration currently needs
+  the uninstalled `openpyxl` dependency.
+- The stamped PDF, order-2 flow, and Pearson launch gate passed a local browser
+  check with no console warnings/errors.
+- A live RAT browser check confirmed that Submit remained disabled, Enter could not
+  advance, zero triggered automatic submission, and the next item locked again.
 
 ## Backend contract for Wasiq
 
@@ -59,13 +82,17 @@ the local browser gate is not a security boundary.
 
 ## Required decisions before deployment
 
-Babak must confirm the study-code issuance rule, Q-global URL, examinee-ID mapping,
-launch/return and recovery workflow, standardized-score export field, consent
-placement, final participant wording, and supply/confirm the exact DRAT random-noun
-pool and embedding files. Wasiq must implement and test the server-side session/event
-contract, protected export, 260-slot migration, and dev deployment. Prit must connect
-the participant frontend to that agreed contract and verify the scoring/export flow.
-The study team must approve an end-to-end dev pilot before any participant launch.
+The October 2 and October 7 meetings established the stamped in-app consent gate,
+Pearson's stable self-registration URL with a fresh group code per lab meeting,
+room-level Session 1 ordering, supervised spoken Raven instructions, and the
+manual-response/timeout rule. Pearson's `SAMEORIGIN` response header rules out an
+iframe, so the frontend now uses a deliberate new-tab launch. Remaining decisions
+include one versus paired study codes, Raven interruption recovery, Pearson export
+linkage/score field, and the station reset procedure. Wasiq must implement and test
+the server-side session/event contract, protected export, 260-slot migration, and
+dev deployment. Prit's approved frontend changes are complete locally; the remaining
+Prit work is connecting them to Wasiq's contract and verifying scoring/export. The
+study team must approve an end-to-end dev pilot before any participant launch.
 
 ## Supplied-material coverage
 
@@ -76,7 +103,8 @@ The study team must approve an end-to-end dev pilot before any participant launc
 - `DRAT_RA_Getting_Started.docx`, `High-level Details.docx`, the protocol form,
   and study-key template define the two-session flow, privacy model, and IDs.
 - Consent, recruitment, screening, scheduling, and IRB correspondence are
-  operational/Qualtrics records; they are intentionally not bundled into the app.
+  operational/Qualtrics records; only the exact stamped consent PDF is bundled into
+  the app, while all other IRB files stay private.
 
 ## Local run
 
@@ -85,5 +113,5 @@ cd src/human_experiments/battery
 python3 -m http.server 8001
 ```
 
-Open `http://127.0.0.1:8001/?session=1&slot=0` or replace `session=1` with
+Open `http://127.0.0.1:8001/?session=1&order=2&slot=0` or replace `session=1` with
 `session=2`. Use the same deidentified code for both sessions.

@@ -35,8 +35,12 @@ window.BATTERY_MODULES["dat"] = {
             button_label: "Submit",
             data: { test: "dat", item_id: "dat_single", battery_tag: "task",
                     displayed_stimuli: { response_limit: n, time_limit_sec: cfg.time_limit_sec,
+                                         submission_locked_until_timeout: true,
                                          instructions: cfg.intro_html } },
-            on_load: cd.start,
+            on_load: () => {
+                cd.start();
+                window.requireAnyTextResponse("Enter at least one noun before submitting.");
+            },
             on_finish: (data) => { cd.stop(); data.timed_out = cd.expired(); },
         };
 

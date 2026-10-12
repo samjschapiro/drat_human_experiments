@@ -32,21 +32,17 @@ idempotent) hands out a *balanced* sequence and refills gaps left by dropouts �
 exact property the rating scaffold introduced it for. We keep it and just reinterpret
 the returned integer.
 
-## Why the slot decodes into (order × anchor-set)
+## Why Session 1 order is separate from the slot
 
-A single balanced counter has to balance two things at once: the counterbalance order
-**and** which DRAT anchor set the participant sees. We decode
+The original battery decoded task order from the participant slot. The in-person
+protocol instead requires everyone in one lab meeting to reach Raven together for
+spoken instructions. Session 1 therefore reads one explicit `order=1..6` value from
+the meeting URL, while the slot selects only the participant's validated DRAT
+assignment for Session 2.
 
-```
-orderIndex     = slot % n_orders
-anchorSetIndex = ⌊slot / n_orders⌋ % n_anchor_sets
-```
-
-As the counter fills 0,1,2,…, `orderIndex` cycles fastest and `anchorSetIndex`
-advances every `n_orders` slots, so both dimensions fill evenly **iff** `TOTAL_SLOTS`
-is an exact multiple of `n_orders × n_anchor_sets`. `prepare_battery.py` asserts this.
-The backend stays oblivious — slot semantics live entirely in `core.js`, which is why
-`claim_slot()` needed no change.
+Researchers cycle the six fixed URLs across meetings and record that choice on the
+run sheet. The backend must preserve both the meeting order and slot; it must never
+silently derive one from the other.
 
 ## Why scoring is offline, not in the browser or an edge function
 
@@ -66,10 +62,11 @@ with a better model later. The frontend's only job is faithful raw capture.
 
 jsPsych's `survey-text` / `survey-html-form` do not reliably auto-end on
 `trial_duration`. Rather than depend on plugin-specific behavior, `countdown.js`
-clicks the trial's submit button when the timer expires — the plugin's normal submit
-path runs, recording whatever was typed (empty fields serialize as `""`, giving the
-DAT/DRAT scorer a stable `w0..w9` vector). The interval is always cleared in
-`on_finish` so a stale timer can't bleed into the next trial.
+disables the submit control, blocks Enter-key form submission for the full protocol
+duration, and clicks the submit button at zero. The plugin's normal submit path then
+records whatever was typed (empty fields serialize as `""`, giving the DAT/DRAT
+scorer a stable `w0..w9` vector). The interval and form listener are always cleared
+in `on_finish` so neither can bleed into the next trial.
 
 ## Why RAT defaults to a 30-item subsample
 

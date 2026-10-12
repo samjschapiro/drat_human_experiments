@@ -1,12 +1,34 @@
 # Two-session study-flow implementation record
 
-Updated: October 2, 2026
+Updated: October 12, 2026
 
 ## Purpose
 
 This document records what was implemented on top of the code received from the
 GitHub repository. It describes the baseline, current study behavior, files changed,
 research materials used, scoring support, verification, and known limits.
+
+## October 12 frontend update
+
+The approved next phase is now implemented locally under protocol
+`drat-human-2026-v2`:
+
+- Session 1 displays the exact stamped consent PDF before study entry and creates no
+  session when consent is declined.
+- The lab meeting selects one strict `order=1..6` URL for every station; order is no
+  longer derived from the participant's DRAT assignment slot.
+- Raven opens Pearson's stable Q-global self-registration page in a supervised new
+  tab. Q-global's `X-Frame-Options: SAMEORIGIN` header rules out iframe embedding.
+- The app never stores the fresh Pearson group code or Pearson-requested personal
+  details. `raven_return` is explicitly participant self-report.
+- DAT, every RAT item, and every DRAT block now enforce their full configured
+  duration. Submit and Enter-key bypasses are disabled until the response
+  auto-submits at zero with `timed_out=true`.
+- Consent version/timestamp, meeting order index/source, and the full task order are
+  included in local session exports and event assignment metadata.
+
+The production session/event backend, Pearson score-export normalization, station
+reset procedure, interrupted-Raven procedure, and supervised pilot remain pending.
 
 ## Baseline
 
@@ -42,7 +64,8 @@ Both implementation commits are included on the review branch
 
 - The participant enters a deidentified study code containing 3–32 uppercase
   letters, digits, or hyphens.
-- The participant/researcher chooses Session 1 or Session 2.
+- The fixed URL chooses Session 1 or Session 2; Session 1 also requires the lab's
+  explicit order number.
 - No name, email, IP address, or user-agent is collected by the local study flow.
 - Local saves are namespaced by protocol version, study code, and session number.
 
@@ -69,8 +92,8 @@ Session 1 contains 35 recordable events:
 - Demographics: age, gender, race/ethnicity, year, field of study, and English-
   language questions, all optional.
 
-The Raven link is currently an explicit local placeholder because the licensed
-Q-global URL has not been supplied.
+Raven uses Pearson's stable Q-global self-registration URL in a supervised new tab.
+The researcher supplies the fresh lab-meeting group code verbally outside the app.
 
 ### Session 2 prerequisite
 
@@ -236,10 +259,9 @@ in the repository.
 
 ### Operational documents
 
-Consent, recruitment, screening, scheduling, and IRB correspondence were reviewed
-as operational constraints. They are intentionally not bundled into the browser
-application. The supplied workflow places screening/consent in the approved external
-process rather than duplicating it inside this app.
+Recruitment, screening, scheduling, and IRB correspondence remain operational
+records outside the browser application. The sole public IRB asset is the exact
+stamped consent PDF required for the in-app Session 1 consent gate.
 
 ## File-level implementation inventory
 
@@ -247,18 +269,19 @@ process rather than duplicating it inside this app.
 |---|---|
 | `index.html` | Loads study materials, configuration, study entry, save client, questionnaires, and session builders |
 | `js/core.js` | Replaced the original single-session engine with two-session routing, capture, resume, local completion, and Session 2 gating |
-| `js/study-code.js` | Added validated deidentified code and session entry |
-| `js/study-config.js` | Added protocol version, six Session 1 orders, local-production lock, and Raven placeholder |
+| `js/study-code.js` | Added stamped consent gate plus validated deidentified code and session entry |
+| `js/study-config.js` | Added protocol v2, strict meeting-order parser, consent asset, production lock, and Q-global URL |
 | `js/save-client.js` | Added incremental local event records, idempotent resume, and `/save-block` transport |
 | `js/sessions/session1.js` | Added DAT/RAT/Raven order assembly followed by BFI-10 and demographics |
 | `js/sessions/session2.js` | Added eight-block DRAT, break, attention check, and SCTT assembly |
 | `js/tests/bfi10.js` | Added BFI-10 and instructed-response check |
 | `js/tests/demographics.js` | Added optional protocol demographics |
 | `js/tests/attention-checks.js` | Added orange attention check |
-| `js/tests/raven.js` | Added secure external Q-global handoff/return placeholder |
+| `js/tests/raven.js` | Added supervised Q-global new-tab handoff and self-reported return gate |
 | `js/tests/drat.js` | Reworked DRAT into eight validated two-minute assignment blocks |
 | `js/tests/sctt.js` | Added validated subtest-block ordering and three required responses |
-| `js/tests/dat.js`, `js/tests/rat.js` | Added complete displayed-stimulus and presentation metadata capture |
+| `js/countdown.js`, `js/tests/dat.js`, `js/tests/rat.js` | Added shared manual-response validation with timer-only bypass |
+| `assets/Consent_DRAT_v3_tracked.pdf` | Added the unchanged stamped consent document as the only public IRB asset |
 | `prepare_study_materials.py` | Added source ingestion, validation, balancing, and deterministic assignment generation |
 | `js/study-materials.js` | Added generated 260-slot DRAT assignment bundle |
 | `item_banks/sctt_beaty_2026.json` | Corrected/aligned SCTT items with the supplied source |
@@ -272,7 +295,9 @@ process rather than duplicating it inside this app.
 
 - JavaScript syntax checks pass for the complete battery.
 - Every Python file in the battery compiles.
-- The generator reproduces the committed material bundle exactly.
+- The original generator verification reproduced all assignments exactly. For v2,
+  a checksum comparison confirms that only the protocol label changed; rerunning
+  the generator requires installing its `openpyxl` dependency.
 - All 260 DRAT assignments pass invariants and source-balance validation.
 - Full Session 1 browser run passes with 35 saved events and no JavaScript errors.
 - Full Session 2 browser run passes with 22 saved events and no JavaScript errors.
@@ -282,16 +307,15 @@ process rather than duplicating it inside this app.
 - SCTT requires three responses and preserves subtest blocks.
 - Synthetic scoring passes for the three-model DRAT composite and CAP SCTT import.
 - Git whitespace/diff validation passes.
+- Browser verification confirms a timed RAT item cannot submit by button or Enter,
+  auto-submits at zero, and immediately locks the next timed item.
 
 ## Intentionally not implemented
 
 - Production Supabase integration and deployment; this belongs to the deployment
   workstream.
-- Final Q-global URL, examinee-ID mapping, approved launch/return and recovery
-  workflow, real export normalization, and any separately approved automated
-  Q-global integration.
-- Participant-facing consent/screening pages already handled by the approved
-  operational workflow.
+- Pearson identity linkage, interrupted-assessment recovery, station reset, real
+  export normalization, and any separately approved automated Q-global integration.
 - Final DRAT numeric research scoring without the missing approved pool/embeddings.
 - A bundled SCTT model; the validated CAP service is the scoring authority.
 - Any push, merge, pull request, or production change.
@@ -303,7 +327,7 @@ cd src/human_experiments/battery
 python3 -m http.server 8001
 ```
 
-Complete `http://127.0.0.1:8001/?session=1&slot=0`, then open
+Complete `http://127.0.0.1:8001/?session=1&order=2&slot=0`, then open
 `http://127.0.0.1:8001/?session=2` and enter the same study code. Session 2 will
 reuse the completed Session 1 assignment.
 

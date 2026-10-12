@@ -90,7 +90,10 @@ function showLocalResult(saved) {
             session_number: saved.session_number,
             session_record_id: saved.session_record_id,
             slot: saved.slot,
+            order_index: saved.order_index,
+            order_source: saved.order_source,
             order: saved.order,
+            consent: saved.consent,
             protocol_version: saved.protocol_version,
             complete: saved.complete,
             responses: Object.values(saved.events).map((event) => ({
@@ -122,8 +125,20 @@ async function main() {
     if (DEPLOY_ENV === "prod") fatal("This study-flow preview is not approved for participant launch.");
     document.body.dataset.banner = "LOCAL PREVIEW — deidentified test data stays in this browser";
 
-    const { studyCode, sessionNumber } = await window.requestStudyEntry();
-    const slotParam = new URLSearchParams(location.search).get("slot");
+    const params = new URLSearchParams(location.search);
+    const sessionParam = params.get("session");
+    if (sessionParam !== null && sessionParam !== "1" && sessionParam !== "2") {
+        fatal("The session parameter must be 1 or 2.");
+    }
+    const fixedSession = sessionParam === null ? null : Number(sessionParam);
+    let consent = fixedSession === 1 ? await window.requestStudyConsent(study) : null;
+    if (fixedSession === 1 && !consent) return;
+    const { studyCode, sessionNumber } = await window.requestStudyEntry({ sessionNumber: fixedSession });
+    if (sessionNumber === 1 && !consent) {
+        consent = await window.requestStudyConsent(study);
+        if (!consent) return;
+    }
+    const slotParam = params.get("slot");
     let slot = slotParam === null ? 0 : Number(slotParam);
     if (sessionNumber === 2) {
         const firstKey = `thinking-tasks:${study.protocolVersion}:${studyCode}:session-1`;
@@ -139,11 +154,13 @@ async function main() {
     if (!Number.isInteger(slot) || slot < 0 || slot >= materials.assignments.length) {
         fatal("The local preview slot must match one of the generated assignments.");
     }
-    const order = sessionNumber === 1
-        ? study.session1Orders[slot % study.session1Orders.length]
-        : ["drat", "sctt"];
+    const orderIndex = sessionNumber === 1
+        ? window.resolveSession1OrderIndex(location.search)
+        : null;
+    const order = sessionNumber === 1 ? study.session1Orders[orderIndex] : ["drat", "sctt"];
+    const orderSource = sessionNumber === 1 ? "lab-meeting-url" : "session-2-fixed";
     const store = window.createStudyStore({
-        studyCode, sessionNumber, slot, order,
+        studyCode, sessionNumber, slot, order, orderIndex, orderSource, consent,
         protocolVersion: study.protocolVersion, apiBase: API_BASE,
     });
     if (store.snapshot().complete) {
@@ -152,7 +169,7 @@ async function main() {
     }
     const jsPsych = initJsPsych();
     const ctx = {
-        jsPsych, participantId: studyCode, slot, order,
+        jsPsych, participantId: studyCode, slot, order, orderIndex,
         config, seededShuffle, makeCountdown: window.makeCountdown,
         ravenUrl: study.ravenUrl,
     };

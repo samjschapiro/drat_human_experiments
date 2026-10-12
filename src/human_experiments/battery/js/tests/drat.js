@@ -40,10 +40,14 @@ window.BATTERY_MODULES.drat = {
                     anchors: block.anchors, anchor_size: block.anchor_size,
                     relation: block.relation, triplet_id: block.triplet_id,
                     pair_id: block.pair_id ?? null, presentation_index: index,
-                    displayed_stimuli: { anchors: block.anchors, response_limit: 10, time_limit_sec: 120 },
+                    displayed_stimuli: { anchors: block.anchors, response_limit: 10, time_limit_sec: 120,
+                        submission_locked_until_timeout: true },
                     battery_tag: "task",
                 },
-                on_load: cd.start,
+                on_load: () => {
+                    cd.start();
+                    window.requireAnyTextResponse("Enter at least one noun before submitting.");
+                },
                 on_finish: (data) => { cd.stop(); data.timed_out = cd.expired(); },
             };
         });
