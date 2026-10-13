@@ -27,6 +27,23 @@
             border: none; border-radius: 5px; cursor: pointer;
         }
         .jspsych-btn:hover { background-color: #0056b3; }
+        /* Likert matrix (BFI-10): statements as rows, answers as columns. */
+        .likert-matrix { width: 100%; border-collapse: collapse; margin: 10px 0; background: white; }
+        .likert-matrix thead th {
+            position: sticky; top: 0; background: #f0f0f0; z-index: 1;
+            font-size: 14px; font-weight: 600; line-height: 1.3; padding: 8px 4px; width: 11%;
+            border-bottom: 2px solid #ccc; vertical-align: bottom;
+        }
+        body[data-banner] .likert-matrix thead th { top: 40px; }  /* below the fixed banner */
+        .likert-matrix tbody th {
+            text-align: left; font-weight: normal; padding: 10px 12px; width: 45%;
+        }
+        .likert-matrix tbody tr { border-bottom: 1px solid #e5e5e5; }
+        .likert-matrix tbody tr:nth-child(even) { background: #fafafa; }
+        .likert-matrix tbody tr:hover { background: #eef5ff; }
+        .likert-matrix td { padding: 0; text-align: center; }
+        .likert-matrix td label { display: block; padding: 12px 0; cursor: pointer; }
+        .likert-matrix input[type="radio"] { width: 18px; height: 18px; cursor: pointer; margin: 0; }
         /* Status banner (debug mode / dev environment). A pseudo-element on
            <body> because jsPsych replaces body's children when it starts. */
         body[data-banner] { padding-top: 40px; }
