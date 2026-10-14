@@ -5,13 +5,16 @@ window.STUDY_MODULES.demographics = function buildDemographics() {
     const prefer = (name) => option(name, "prefer_not_to_say", "Prefer not to say");
     const field = (legend, inner) => `<fieldset style="margin:15px 0;border:1px solid #ddd"><legend>${legend}</legend>${inner}</fieldset>`;
     const text = (name) => `<input name="${name}" type="text" autocomplete="off" style="padding:7px;max-width:95%">`;
+    // Whole years only; the browser blocks submit with a message if out of range.
+    const years = (name, min) =>
+        `<input name="${name}" type="number" inputmode="numeric" min="${min}" max="100" step="1" autocomplete="off" style="padding:7px;width:6em">`;
     const races = [
         "American Indian or Alaska Native", "Asian", "Black or African American",
         "Hispanic or Latino", "Middle Eastern or North African",
         "Native Hawaiian or Other Pacific Islander", "White",
     ];
     const html = [
-        field("What is your age, in years?", text("age") + prefer("age_status")),
+        field("What is your age, in years?", years("age", 16) + prefer("age_status")),
         field("What is your gender?", ["Woman", "Man"].map((x) => option("gender", x, x)).join("") +
               option("gender", "another", "Non-binary or another gender (please specify if you wish)") +
               text("gender_other") + prefer("gender")),
@@ -26,7 +29,7 @@ window.STUDY_MODULES.demographics = function buildDemographics() {
         field("Is English your first language?", option("english_first", "yes", "Yes") +
               option("english_first", "no", "No") + prefer("english_first")),
         field("If English is not your first language, at what age did you begin learning it?",
-              text("english_learning_age") + prefer("english_learning_age_status")),
+              years("english_learning_age", 0) + prefer("english_learning_age_status")),
     ].join("");
     return [{
         type: jsPsychSurveyHtmlForm,
