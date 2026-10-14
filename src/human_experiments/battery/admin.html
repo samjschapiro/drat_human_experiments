@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex, nofollow">
+    <title>Thinking Tasks Admin</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5; color: #1f2937; margin: 0; font-size: 15px;
+        }
+        header {
+            background: white; border-bottom: 1px solid #ddd; padding: 12px 20px;
+            display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+        }
+        header h1 { font-size: 18px; margin: 0; flex: 1; }
+        .env { font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 4px; background: #e5e7eb; }
+        .env.dev { background: #fef3c7; color: #92400e; }
+        .env.prod { background: #fee2e2; color: #991b1b; }
+        main { max-width: 1100px; margin: 20px auto; padding: 0 16px; }
+        section { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 16px 20px; margin-bottom: 18px; }
+        section h2 { font-size: 16px; margin: 0 0 10px; }
+        button {
+            font-size: 14px; padding: 7px 14px; border: none; border-radius: 5px;
+            background: #007bff; color: white; cursor: pointer;
+        }
+        button:hover { background: #0056b3; }
+        button.secondary { background: #e5e7eb; color: #1f2937; }
+        button.danger { background: #b91c1c; }
+        button:disabled { opacity: .5; cursor: default; }
+        input { font-size: 15px; padding: 7px 9px; border: 1px solid #bbb; border-radius: 5px; }
+        .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        .muted { color: #6b7280; font-size: 13px; }
+        .error { color: #9b1c1c; }
+        #group-code-current { font: 700 28px ui-monospace, Menlo, monospace; letter-spacing: 1px; }
+        table { border-collapse: collapse; width: 100%; font-size: 14px; }
+        th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #eee; white-space: nowrap; }
+        th { background: #f9fafb; position: sticky; top: 0; }
+        .table-wrap { overflow-x: auto; max-height: 60vh; overflow-y: auto; border: 1px solid #eee; }
+        .state-complete { color: #166534; font-weight: 600; }
+        .state-progress { color: #92400e; font-weight: 600; }
+        .state-reset { color: #6b7280; text-decoration: line-through; }
+        #login { max-width: 380px; margin: 10vh auto; }
+        #login input { width: 100%; box-sizing: border-box; margin: 4px 0 12px; }
+        ul.links { margin: 0; padding-left: 18px; line-height: 1.8; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Thinking Tasks — researcher admin</h1>
+        <span id="env-badge" class="env"></span>
+        <span id="who" class="muted"></span>
+        <button id="sign-out" class="secondary" hidden>Sign out</button>
+    </header>
+
+    <main>
+        <section id="login" hidden>
+            <h2>Researcher sign-in</h2>
+            <form id="login-form">
+                <label for="login-email">Researcher email</label>
+                <input id="login-email" type="email" autocomplete="username" required>
+                <label for="login-password">Admin password</label>
+                <input id="login-password" type="password" autocomplete="current-password" required>
+                <p id="login-error" class="error" role="alert"></p>
+                <button type="submit">Sign in</button>
+            </form>
+        </section>
+
+        <div id="panel" hidden>
+            <section>
+                <h2>Q-global group session code</h2>
+                <p class="muted">Shown to participants on the Raven screen. Set it before each lab session;
+                    screens already open pick up a new code within a few seconds.</p>
+                <div class="row">
+                    <span id="group-code-current"></span>
+                    <span id="group-code-meta" class="muted"></span>
+                </div>
+                <form id="group-code-form" class="row" style="margin-top:12px">
+                    <input id="group-code-input" placeholder="New group session code" maxlength="64" required
+                           autocomplete="off" spellcheck="false">
+                    <button type="submit">Set code</button>
+                    <span id="group-code-error" class="error" role="alert"></span>
+                </form>
+            </section>
+
+            <section>
+                <h2>Study links</h2>
+                <p class="muted">Visit 1: open the same order link on every station in a lab session; rotate orders across sessions.</p>
+                <ul id="study-links" class="links"></ul>
+            </section>
+
+            <section>
+                <div class="row" style="justify-content:space-between">
+                    <h2 style="margin:0">Participants</h2>
+                    <div class="row">
+                        <input id="filter" placeholder="Filter by email or code" autocomplete="off">
+                        <button id="refresh" class="secondary">Refresh</button>
+                    </div>
+                </div>
+                <p id="summary" class="muted"></p>
+                <p id="table-error" class="error" role="alert"></p>
+                <div class="table-wrap">
+                    <table>
+                        <thead><tr>
+                            <th>Email</th><th>Code</th><th>Visit</th><th>Slot</th><th>Tasks</th>
+                            <th>State</th><th>Last activity</th><th></th>
+                        </tr></thead>
+                        <tbody id="rows"></tbody>
+                    </table>
+                </div>
+                <p class="muted">Reset archives the visit (its responses are kept) so the participant can start it again.
+                    Reset Visit 2 before Visit 1.</p>
+            </section>
+
+            <section>
+                <h2>Download data</h2>
+                <div class="row">
+                    <button id="dl-raw" class="secondary">Full export (JSON)</button>
+                    <button id="dl-sessions" class="secondary">Visits (CSV)</button>
+                    <button id="dl-events" class="secondary">Responses (CSV)</button>
+                    <button id="dl-participants" class="secondary">Participant emails (CSV)</button>
+                </div>
+                <p class="muted">The participant-email file and the full export contain emails: keep them on
+                    a secure study computer. The visits and responses files use study codes only.</p>
+            </section>
+        </div>
+    </main>
+
+    <script src="js/deploy-config.js"></script>
+    <script src="js/study-config.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>

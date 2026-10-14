@@ -4,6 +4,7 @@
 # backend source and configs.
 /*
 !/index.html
+!/admin.html
 !/js
 !/assets
 !/vercel.json

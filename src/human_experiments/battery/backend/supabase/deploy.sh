@@ -8,6 +8,8 @@
 #   SUPABASE_ACCESS_TOKEN  personal access token (or `npx supabase login` once)
 #   SUPABASE_DB_PASSWORD   that project's database password
 #   DATA_EXPORT_TOKEN      researcher token for get-data and admin
+#   ADMIN_PASSWORD         shared password for the /admin panel
+#   RESEARCHER_EMAILS      comma-separated emails allowed into /admin
 #
 # Requires functions/_shared/study_manifest.json (prepare_backend_manifest.py).
 # The Supabase CLI's project root is battery/backend/, so everything runs there.
@@ -19,6 +21,8 @@ cd "$SCRIPT_DIR/.."
 PROJECT_REF="${1:-${SUPABASE_PROJECT_REF:-}}"
 : "${PROJECT_REF:?Usage: $0 <project-ref>  (or set SUPABASE_PROJECT_REF)}"
 : "${DATA_EXPORT_TOKEN:?Set DATA_EXPORT_TOKEN (generate with: openssl rand -hex 32)}"
+: "${ADMIN_PASSWORD:?Set ADMIN_PASSWORD (password for the /admin panel)}"
+: "${RESEARCHER_EMAILS:?Set RESEARCHER_EMAILS (comma-separated emails allowed into /admin)}"
 command -v npx >/dev/null 2>&1 || { echo "npx required (Node.js)"; exit 1; }
 
 MANIFEST=supabase/functions/_shared/study_manifest.json
@@ -44,9 +48,10 @@ npx supabase db push
 
 echo ""
 echo "Setting function secrets ..."
-npx supabase secrets set --project-ref "$PROJECT_REF" "DATA_EXPORT_TOKEN=$DATA_EXPORT_TOKEN"
+npx supabase secrets set --project-ref "$PROJECT_REF" "DATA_EXPORT_TOKEN=$DATA_EXPORT_TOKEN" \
+    "ADMIN_PASSWORD=$ADMIN_PASSWORD" "RESEARCHER_EMAILS=$RESEARCHER_EMAILS"
 
-for fn in start-session save-block finish-session get-data admin; do
+for fn in start-session save-block finish-session raven-code get-data admin; do
     echo ""
     echo "Deploying function: $fn"
     npx supabase functions deploy "$fn" --project-ref "$PROJECT_REF"

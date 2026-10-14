@@ -1,4 +1,4 @@
-// GET /get-data  (Authorization: Bearer <DATA_EXPORT_TOKEN>)  — researchers only.
+// GET /get-data  (Authorization: Bearer <DATA_EXPORT_TOKEN or admin-panel token>)  — researchers only.
 //
 // Returns every study session (including researcher-reset attempts, flagged by
 // reset_at) with its saved events in save order, plus the participants list
@@ -29,8 +29,8 @@ async function selectAll(table: string, columns: string, orderBy: string[]): Pro
 serve(async (req) => {
     if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
     if (req.method !== "GET") return error(405, "method_not_allowed", "GET required");
-    const denied = requireResearcher(req);
-    if (denied) return denied;
+    const auth = await requireResearcher(req);
+    if (auth instanceof Response) return auth;
 
     try {
         const sessions = await selectAll("study_sessions",

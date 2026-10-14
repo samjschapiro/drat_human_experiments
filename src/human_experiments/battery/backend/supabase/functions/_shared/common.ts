@@ -62,7 +62,7 @@ export function randomToken(bytes = 32): string {
 }
 
 // Constant-time comparison so response timing doesn't leak the token.
-function tokenMatches(given: string, expected: string): boolean {
+export function tokenMatches(given: string, expected: string): boolean {
     const a = new TextEncoder().encode(given);
     const b = new TextEncoder().encode(expected);
     if (a.length !== b.length) return false;
@@ -71,16 +71,67 @@ function tokenMatches(given: string, expected: string): boolean {
     return diff === 0;
 }
 
-// Researcher-only endpoints (get-data, admin) require DATA_EXPORT_TOKEN.
-// Returns an error Response to send, or null when authorized.
-export function requireResearcher(req: Request): Response | null {
-    const expected = Deno.env.get("DATA_EXPORT_TOKEN");
-    if (!expected) {
-        console.error("DATA_EXPORT_TOKEN secret is not set; refusing all researcher requests");
-        return error(500, "not_configured", "export token not configured");
-    }
-    if (!tokenMatches(bearer(req), expected)) return error(401, "unauthorized", "unauthorized");
-    return null;
+function secret(name: string): string | null {
+    const value = Deno.env.get(name);
+    if (!value) console.error(`${name} secret is not set; refusing researcher requests`);
+    return value || null;
+}
+
+// Researcher emails allowed into the admin panel (RESEARCHER_EMAILS secret,
+// comma-separated, from .env.<env>).
+export function researcherEmails(): Set<string> {
+    return new Set((Deno.env.get("RESEARCHER_EMAILS") ?? "")
+        .split(",").map((e) => e.trim().toLowerCase()).filter(Boolean));
+}
+
+const ADMIN_TOKEN_HOURS = 12;
+
+async function hmacHex(key: string, text: string): Promise<string> {
+    const k = await crypto.subtle.importKey("raw", new TextEncoder().encode(key),
+        { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+    const sig = await crypto.subtle.sign("HMAC", k, new TextEncoder().encode(text));
+    return Array.from(new Uint8Array(sig)).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+// Admin-panel login token: "adm.<base64url(email|expiry)>.<hmac>", signed with
+// DATA_EXPORT_TOKEN, so no server-side session table is needed.
+export async function issueAdminToken(email: string): Promise<{ token: string; expires_at: string }> {
+    const key = secret("DATA_EXPORT_TOKEN");
+    if (!key) throw new Error("export token not configured");
+    const expires = Date.now() + ADMIN_TOKEN_HOURS * 3600 * 1000;
+    const payload = btoa(`${email}|${expires}`).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    return { token: `adm.${payload}.${await hmacHex(key, payload)}`, expires_at: new Date(expires).toISOString() };
+}
+
+async function adminTokenEmail(token: string, key: string): Promise<string | null> {
+    const [prefix, payload, sig] = token.split(".");
+    if (prefix !== "adm" || !payload || !sig) return null;
+    if (!tokenMatches(sig, await hmacHex(key, payload))) return null;
+    const [email, expires] = atob(payload.replace(/-/g, "+").replace(/_/g, "/")).split("|");
+    if (!(Number(expires) > Date.now())) return null;
+    // Removing an email from RESEARCHER_EMAILS revokes its tokens on the next redeploy.
+    return researcherEmails().has(email) ? email : null;
+}
+
+// Researcher-only endpoints (get-data, admin). Accepts DATA_EXPORT_TOKEN
+// (scripts: admin.sh, get_data.sh) or an admin-panel login token. Returns the
+// researcher identity, or an error Response to send.
+export async function requireResearcher(req: Request): Promise<{ researcher: string } | Response> {
+    const expected = secret("DATA_EXPORT_TOKEN");
+    if (!expected) return error(500, "not_configured", "export token not configured");
+    const given = bearer(req);
+    if (tokenMatches(given, expected)) return { researcher: "researcher-key" };
+    const email = await adminTokenEmail(given, expected);
+    if (email) return { researcher: email };
+    return error(401, "unauthorized", "unauthorized");
+}
+
+// Admin-panel login: an allowlisted researcher email plus ADMIN_PASSWORD.
+export function checkAdminLogin(email: string, password: string): "ok" | "denied" | "not_configured" {
+    const expected = secret("ADMIN_PASSWORD");
+    if (!expected || researcherEmails().size === 0) return "not_configured";
+    const passwordOk = tokenMatches(password, expected);
+    return passwordOk && researcherEmails().has(email) ? "ok" : "denied";
 }
 
 export function normalizeCode(raw: unknown): string | null {

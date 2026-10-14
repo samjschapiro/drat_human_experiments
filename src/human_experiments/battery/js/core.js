@@ -278,6 +278,15 @@ async function main() {
         jsPsych, participantId: studyCode, slot, order, orderIndex,
         config, seededShuffle, makeCountdown: window.makeCountdown,
         ravenUrl: study.ravenUrl,
+        // Current Q-global group session code set in /admin (null offline or unset).
+        fetchGroupCode: online ? async () => {
+            const response = await fetch(`${API_BASE}/raven-code`, {
+                method: "POST", headers: { Authorization: `Bearer ${server.session_token}` },
+            });
+            const result = await response.json().catch(() => ({}));
+            if (!response.ok) throw new Error(result.message || `Group code request failed (${response.status})`);
+            return result.group_code;
+        } : null,
     };
     const timeline = sessionNumber === 1
         ? window.STUDY_SESSIONS.buildSession1(ctx)

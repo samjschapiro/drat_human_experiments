@@ -1,6 +1,13 @@
-// POST /admin  (Authorization: Bearer <DATA_EXPORT_TOKEN>)  — researchers only.
+// POST /admin  (Authorization: Bearer <DATA_EXPORT_TOKEN or admin-panel token>)  — researchers only.
 //
 // Actions (body.action):
+//   login           { email, password }            (no Authorization needed)
+//       Admin panel sign-in: an email in RESEARCHER_EMAILS plus ADMIN_PASSWORD.
+//       Returns a 12-hour token for the other actions and get-data.
+//   get_group_code  {}
+//   set_group_code  { code }
+//       The Pearson Q-global group session code shown on the Raven screen.
+//       Overwrite it for each lab session.
 //   add_codes       { codes: ["DRAT-001", ...] }
 //       Load issued study codes (e.g. exported from the lab registration site).
 //       Idempotent; the whole request is rejected if any code is malformed.
@@ -11,12 +18,25 @@
 //       participant can start that visit again. The slot is kept. Session 1 cannot be reset
 //       while an active Session 2 exists; reset Session 2 first.
 //
+// Changes (set_group_code, reset_session) are written to admin_audit with the
+// researcher's email.
+//
 // Participants now sign in with their Stony Brook email, which the server
 // maps to an internal code (participants table); add_codes / generate_codes
 // remain for researcher test codes only.
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { CORS, STUDY_CODE_RE, db, error, json, normalizeCode, normalizeEmail, randomCode, requireResearcher } from "../_shared/common.ts";
+import {
+    CORS, STUDY_CODE_RE, checkAdminLogin, db, error, issueAdminToken, json, normalizeCode, normalizeEmail,
+    randomCode, requireResearcher,
+} from "../_shared/common.ts";
+
+const GROUP_CODE_KEY = "raven_group_code";
+
+async function audit(researcher: string, action: string, detail: object) {
+    const { error: err } = await db().from("admin_audit").insert({ researcher, action, detail });
+    if (err) throw err;
+}
 
 const MAX_CODES_PER_REQUEST = 1000;
 
@@ -33,14 +53,50 @@ async function addCodes(codes: string[]) {
 serve(async (req) => {
     if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
     if (req.method !== "POST") return error(405, "method_not_allowed", "POST required");
-    const denied = requireResearcher(req);
-    if (denied) return denied;
-
     let body: any;
     try { body = await req.json(); } catch { return error(400, "invalid_json", "invalid JSON"); }
 
+    if (body.action === "login") {
+        const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+        const password = typeof body.password === "string" ? body.password : "";
+        const result = checkAdminLogin(email, password);
+        if (result === "not_configured") return error(500, "not_configured", "admin login is not configured");
+        if (result === "denied") {
+            await new Promise((r) => setTimeout(r, 1000));   // slow down guessing
+            return error(401, "unauthorized", "That email and password are not accepted.");
+        }
+        return json({ action: "login", email, ...(await issueAdminToken(email)) });
+    }
+
+    const auth = await requireResearcher(req);
+    if (auth instanceof Response) return auth;
+    const researcher = auth.researcher;
+
     try {
         switch (body.action) {
+            case "get_group_code": {
+                const { data, error: err } = await db().from("study_settings")
+                    .select("value, updated_at, updated_by").eq("key", GROUP_CODE_KEY).maybeSingle();
+                if (err) throw err;
+                return json({ action: "get_group_code", researcher, group_code: data?.value ?? null,
+                              updated_at: data?.updated_at ?? null, updated_by: data?.updated_by ?? null });
+            }
+
+            case "set_group_code": {
+                const code = typeof body.code === "string" ? body.code.trim() : "";
+                if (!/^[\x21-\x7E]{1,64}$/.test(code)) {
+                    return error(400, "invalid_request", "code must be 1–64 visible characters with no spaces");
+                }
+                const { data, error: err } = await db().from("study_settings")
+                    .upsert({ key: GROUP_CODE_KEY, value: code, updated_at: new Date().toISOString(),
+                              updated_by: researcher })
+                    .select("value, updated_at, updated_by").single();
+                if (err) throw err;
+                await audit(researcher, "set_group_code", { code });
+                return json({ action: "set_group_code", group_code: data.value,
+                              updated_at: data.updated_at, updated_by: data.updated_by });
+            }
+
             case "add_codes": {
                 if (!Array.isArray(body.codes) || body.codes.length === 0) {
                     return error(400, "invalid_request", "codes must be a non-empty array");
@@ -108,12 +164,15 @@ serve(async (req) => {
                     .select("id, slot");
                 if (err) throw err;
                 if (!data?.length) return error(404, "no_active_session", "No active session to reset.");
+                await audit(researcher, "reset_session", { study_code: code, session_number: sessionNumber,
+                    reason, archived_session_record_id: data[0].id });
                 return json({ action: "reset_session", study_code: code, session_number: sessionNumber,
                               archived_session_record_id: data[0].id, slot_kept: data[0].slot });
             }
 
             default:
-                return error(400, "unknown_action", "action must be add_codes, generate_codes or reset_session");
+                return error(400, "unknown_action",
+                    "action must be login, get_group_code, set_group_code, add_codes, generate_codes or reset_session");
         }
     } catch (err: any) {
         console.error("admin action failed", body.action, err);

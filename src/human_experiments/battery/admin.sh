@@ -8,6 +8,10 @@
 #   bash admin.sh dev add-codes codes.txt         # one code per line (first CSV column ok)
 #   bash admin.sh dev generate 20 DRAT            # create 20 random DRAT-XXXXXX codes
 #   bash admin.sh dev reset abc@stonybrook.edu 1 "station crashed at RAT"
+#   bash admin.sh dev group-code [NEW-CODE]       # show / set the Q-global group code
+#
+# The same actions are in the web panel at <site>/admin (researcher email +
+# ADMIN_PASSWORD).
 #
 # Participants sign in with their Stony Brook email; add-codes / generate only
 # create researcher test codes.
@@ -18,7 +22,7 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 
 ENV_NAME="${1:-}"
 ACTION="${2:-}"
-case "$ENV_NAME" in dev|prod) ;; *) sed -n '2,14p' "$0"; exit 1 ;; esac
+case "$ENV_NAME" in dev|prod) ;; *) sed -n '2,18p' "$0"; exit 1 ;; esac
 
 ENV_FILE="$REPO_ROOT/.env.$ENV_NAME"
 [ -f "$ENV_FILE" ] || { echo "ERROR: $ENV_FILE not found (see .env.example)"; exit 1; }
@@ -92,8 +96,16 @@ EOF
             "$WHO" "$SESSION" "$REASON")
         admin_post "$BODY"
         ;;
+    group-code)
+        if [ -n "${3:-}" ]; then
+            BODY=$(python3 -c 'import json,sys; print(json.dumps({"action":"set_group_code","code":sys.argv[1]}))' "$3")
+        else
+            BODY='{"action":"get_group_code"}'
+        fi
+        admin_post "$BODY"
+        ;;
     *)
-        sed -n '2,14p' "$0"
+        sed -n '2,18p' "$0"
         exit 1
         ;;
 esac

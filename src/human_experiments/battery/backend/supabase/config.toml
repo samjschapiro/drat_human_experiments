@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.admin]
 verify_jwt = false
+
+[functions.raven-code]
+verify_jwt = false
