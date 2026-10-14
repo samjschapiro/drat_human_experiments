@@ -39,7 +39,7 @@ window.requestStudyEntry = function requestStudyEntry(options) {
     return new Promise((resolve) => {
         document.body.innerHTML = `
             <main style="max-width:580px;margin:8vh auto;padding:24px;background:white;border-radius:8px">
-              <h1>Thinking Tasks</h1>
+              <h1>Creativity and Reasoning Tasks</h1>
               <p>Enter your Stony Brook email address. Use the same email on both visits.</p>
               <form id="study-entry">
                 <label for="study-email">Stony Brook email</label><br>
