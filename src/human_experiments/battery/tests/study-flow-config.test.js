@@ -53,6 +53,7 @@ let submitListener = null;
 let clicked = false;
 const fakeButton = {
     disabled: false,
+    style: {},
     click: () => { clicked = true; },
     setAttribute: () => {},
     removeAttribute: () => {},

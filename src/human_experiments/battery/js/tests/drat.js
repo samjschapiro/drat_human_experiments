@@ -32,7 +32,7 @@ window.BATTERY_MODULES.drat = {
                 type: jsPsychSurveyHtmlForm,
                 preamble: cd.html() + `<p style="text-align:center">Set ${index + 1} of 8 — anchor words:</p>
                     <div style="text-align:center;margin:8px 0 16px">${anchorHtml}</div>
-                    <p style="text-align:center">Enter up to ten different nouns related to all the words above.</p>`,
+                    <p style="text-align:center">Type up to ten nouns that are as different as possible from each other, but still related to the anchor words above.</p>`,
                 html: `<div style="text-align:center">${fields}</div>`,
                 button_label: "Submit",
                 data: {

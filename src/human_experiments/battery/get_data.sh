@@ -42,6 +42,9 @@ echo "[$ENV_NAME] raw data → $RAW (copied to battery_raw.json)"
 # Derived files (stdlib only), all from battery_raw.json:
 #   battery_events.csv    one row per saved task, every session incl. reset ones
 #   battery_sessions.csv  one row per session: status, slot, event count
+#   battery_participants.csv  email -> study_code. IDENTIFIABLE: keep it apart
+#                         from the data files and delete it once sessions are
+#                         verified; every other file is keyed by study_code only.
 #   battery_sessions.json active (not reset) sessions in the shape
 #                         scoring/score_battery.py reads (--input this file)
 python3 - "$OUTPUT_DIR" <<'EOF'
@@ -69,6 +72,8 @@ def write(name, rows):
             writer.writerow({k: cell(v) for k, v in row.items()})
     print(f"  → {out}/{name}  ({len(rows)} rows)")
 
+
+write("battery_participants.csv", data.get("participants", []))
 
 session_cols = ["id", "study_code", "session_number", "slot", "complete", "created_at",
                 "completed_at", "reset_at", "reset_reason"]

@@ -2,10 +2,15 @@
  * Two-session study engine.
  *
  * Online (DEPLOY_CONFIG.API_BASE set, i.e. a deployed dev site): the server's
- * /start-session is authoritative for the slot, test order, Session 1 -> 2 gate
- * and already-saved tasks; every task is saved via /save-block and the session
+ * /start-session is authoritative for the slot, test order, Visit 1 -> 2 gate
+ * and already-saved tasks; every task is saved via /save-block and the visit
  * ends with /finish-session. Offline (opening index.html locally): Prit's local
- * preview, with data kept in this browser. Production stays locked (see main()).
+ * preview, with data kept in this browser.
+ *
+ * Participants enter their Stony Brook email first; consent follows for a new
+ * Visit 1. Online, the server returns the internal study code used for every
+ * saved record, so the email itself is never stored with the responses.
+ * (Code and URL parameters still say "session"; participants see "visit".)
  */
 const DEPLOY_ENV = (window.DEPLOY_CONFIG || {}).ENV || "";
 const API_BASE = (window.DEPLOY_CONFIG || {}).API_BASE || "";
@@ -121,19 +126,25 @@ function showLocalResult(saved) {
     });
 }
 
-async function startServerSession(studyCode, sessionNumber, protocolVersion, orderIndex, consent) {
+// Server errors the participant can fix by re-entering the email.
+const RETRYABLE_START_ERRORS = new Set(["invalid_email", "unknown_email", "session1_incomplete"]);
+
+// Returns the session, or { retry: message } / { consentRequired: true }.
+async function startServerSession(email, sessionNumber, protocolVersion, orderIndex, consent) {
     const response = await fetch(`${API_BASE}/start-session`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ protocol_version: protocolVersion, study_code: studyCode,
+        body: JSON.stringify({ protocol_version: protocolVersion, email,
                                session_number: sessionNumber,
                                session1_order_index: orderIndex,
                                consent_version: consent?.version ?? null,
                                consent_accepted_at: consent?.acceptedAt ?? null }),
     });
     const result = await response.json().catch(() => ({}));
+    if (result.error === "consent_required") return { consentRequired: true };
+    if (RETRYABLE_START_ERRORS.has(result.error)) return { retry: result.message };
     if (!response.ok) {
-        fatal(`${result.message || `Could not start the session (${response.status}).`} ` +
+        fatal(`${result.message || `Could not start the visit (${response.status}).`} ` +
               "Reload the page to try again, or ask a researcher.");
     }
     return result;
@@ -141,9 +152,9 @@ async function startServerSession(studyCode, sessionNumber, protocolVersion, ord
 
 function showServerResult(recordId, alreadyComplete) {
     document.body.innerHTML = `<main style="max-width:650px;margin:8vh auto;padding:24px;background:white">
-        <h1>${alreadyComplete ? "This session is already complete" : "Session complete"}</h1>
+        <h1>${alreadyComplete ? "This visit is already complete" : "Visit complete"}</h1>
         <p>Thank you. Please let the researcher know you have finished.</p>
-        <p>Session record: <code id="record-id"></code></p>
+        <p>Record: <code id="record-id"></code></p>
     </main>`;
     document.getElementById("record-id").textContent = recordId;
 }
@@ -158,7 +169,6 @@ async function main() {
     if (study.localPreviewOnly && API_BASE) {
         fatal("This study-flow branch is a local preview. Its block-save backend is not configured for deployment.");
     }
-    if (DEPLOY_ENV === "prod") fatal("This study-flow preview is not approved for participant launch.");
     const online = Boolean(API_BASE);
     document.body.dataset.banner = online
         ? (DEPLOY_ENV === "dev" ? "DEV ENVIRONMENT — test data only, saved to the dev database" : "")
@@ -170,22 +180,41 @@ async function main() {
         fatal("The session parameter must be 1 or 2.");
     }
     const fixedSession = sessionParam === null ? null : Number(sessionParam);
-    let consent = fixedSession === 1 ? await window.requestStudyConsent(study) : null;
-    if (fixedSession === 1 && !consent) return;
-    const { studyCode, sessionNumber } = await window.requestStudyEntry({ sessionNumber: fixedSession });
-    if (sessionNumber === 1 && !consent) {
-        consent = await window.requestStudyConsent(study);
-        if (!consent) return;
+    if (fixedSession === 1) window.resolveSession1OrderIndex(location.search); // fail before asking anything
+
+    // Email first, then consent (only for a Visit 1 that has not started yet).
+    let entryError = "";
+    let email, sessionNumber, orderIndex, consent = null, server = null;
+    for (;;) {
+        ({ email, sessionNumber } = await window.requestStudyEntry({
+            sessionNumber: fixedSession, error: entryError, email,
+        }));
+        orderIndex = sessionNumber === 1 ? window.resolveSession1OrderIndex(location.search) : null;
+        if (!online) {
+            if (sessionNumber === 1) {
+                consent = await window.requestStudyConsent(study);
+                if (!consent) return;
+            }
+            break;
+        }
+        server = await startServerSession(email, sessionNumber, study.protocolVersion, orderIndex, null);
+        if (server.consentRequired) {
+            consent = await window.requestStudyConsent(study);
+            if (!consent) return;
+            server = await startServerSession(email, sessionNumber, study.protocolVersion, orderIndex, consent);
+        }
+        if (server.retry) {
+            entryError = server.retry;
+            continue;
+        }
+        if (server.consentRequired) fatal("The server did not accept the consent record. Ask a researcher.");
+        break;
     }
-    let orderIndex = sessionNumber === 1
-        ? window.resolveSession1OrderIndex(location.search)
-        : null;
+    // Online, every saved record is keyed by the server's code, not the email.
+    const studyCode = online ? server.study_code : email;
     let orderSource = sessionNumber === 1 ? "lab-meeting-url" : "session-2-fixed";
-    let slot, order, server = null;
+    let slot, order;
     if (online) {
-        server = await startServerSession(
-            studyCode, sessionNumber, study.protocolVersion, orderIndex, consent,
-        );
         if (server.complete) {
             showServerResult(server.session_record_id, true);
             return;
@@ -212,10 +241,10 @@ async function main() {
             const firstKey = `thinking-tasks:${study.protocolVersion}:${studyCode}:session-1`;
             const first = JSON.parse(localStorage.getItem(firstKey) || "null");
             if (!first?.complete) {
-                fatal("Session 2 is locked until Session 1 is completed with this study code.");
+                fatal("Visit 2 is locked until Visit 1 is completed with this email.");
             }
             if (slotParam !== null && slot !== first.slot) {
-                fatal("Session 2 must use the assignment saved by Session 1.");
+                fatal("Visit 2 must use the assignment saved by Visit 1.");
             }
             slot = first.slot;
         }
@@ -257,7 +286,7 @@ async function main() {
     remaining.push({
         type: jsPsychHtmlButtonResponse,
         stimulus: online
-            ? "<h2>Thank you</h2><p>Click Finish to save and complete this session.</p>"
+            ? "<h2>Thank you</h2><p>Click Finish to save and complete this visit.</p>"
             : "<h2>Thank you</h2><p>Finish this local preview and review the saved study record.</p>",
         choices: ["Finish"],
         on_finish: async () => {
@@ -266,7 +295,7 @@ async function main() {
                 if (online) showServerResult(saved.session_record_id, false);
                 else showLocalResult(saved);
             } catch (error) {
-                fatal(`Could not finish saving this session: ${error.message} ` +
+                fatal(`Could not finish saving this visit: ${error.message} ` +
                       "Do not close this window; ask a researcher.");
             }
         },

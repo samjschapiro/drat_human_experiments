@@ -30,37 +30,44 @@ window.requestStudyConsent = function requestStudyConsent(study) {
     });
 };
 
+// Participants identify with their Stony Brook email (asked before consent).
+// The server maps it to an internal study code; see backend start-session.
+window.STONY_BROOK_EMAIL_RE = /^[a-z0-9][a-z0-9._%+-]{0,63}@stonybrook\.edu$/;
+
 window.requestStudyEntry = function requestStudyEntry(options) {
     const fixedSession = options?.sessionNumber ?? null;
     return new Promise((resolve) => {
         document.body.innerHTML = `
             <main style="max-width:580px;margin:8vh auto;padding:24px;background:white;border-radius:8px">
               <h1>Thinking Tasks</h1>
-              <p>Enter the deidentified study code provided by the researcher.</p>
+              <p>Enter your Stony Brook email address. Use the same email on both visits.</p>
               <form id="study-entry">
-                <label for="study-code">Study code</label><br>
-                <input id="study-code" name="study-code" required autocomplete="off"
-                       placeholder="DRAT-001" maxlength="32" style="font-size:18px;padding:8px;width:95%"><br><br>
+                <label for="study-email">Stony Brook email</label><br>
+                <input id="study-email" name="study-email" type="email" required autocomplete="off"
+                       spellcheck="false" placeholder="name@stonybrook.edu" maxlength="100"
+                       style="font-size:18px;padding:8px;width:95%"><br><br>
                 <div id="session-picker" ${fixedSession ? "hidden" : ""}>
-                <label for="study-session">Session</label><br>
+                <label for="study-session">Visit</label><br>
                 <select id="study-session" style="font-size:18px;padding:8px;width:100%">
-                  <option value="1">Session 1</option>
-                  <option value="2">Session 2</option>
+                  <option value="1">Visit 1</option>
+                  <option value="2">Visit 2</option>
                 </select><br><br></div>
                 <p id="study-entry-error" role="alert" style="color:#9b1c1c"></p>
-                <button type="submit" class="jspsych-btn">Start session</button>
+                <button type="submit" class="jspsych-btn">Continue</button>
               </form>
             </main>`;
         if (fixedSession) document.getElementById("study-session").value = String(fixedSession);
+        const errorEl = document.getElementById("study-entry-error");
+        errorEl.textContent = options?.error || "";
+        if (options?.email) document.getElementById("study-email").value = options.email;
         document.getElementById("study-entry").addEventListener("submit", (event) => {
             event.preventDefault();
-            const code = document.getElementById("study-code").value.trim().toUpperCase();
-            if (!/^[A-Z0-9][A-Z0-9-]{2,31}$/.test(code)) {
-                document.getElementById("study-entry-error").textContent =
-                    "Use 3–32 letters, numbers, or hyphens; do not enter a name or email.";
+            const email = document.getElementById("study-email").value.trim().toLowerCase();
+            if (!window.STONY_BROOK_EMAIL_RE.test(email)) {
+                errorEl.textContent = "Enter your Stony Brook email address, for example name@stonybrook.edu.";
                 return;
             }
-            resolve({ studyCode: code, sessionNumber: Number(document.getElementById("study-session").value) });
+            resolve({ email, sessionNumber: Number(document.getElementById("study-session").value) });
         });
     });
 };

@@ -1,7 +1,9 @@
 // GET /get-data  (Authorization: Bearer <DATA_EXPORT_TOKEN>)  — researchers only.
 //
 // Returns every study session (including researcher-reset attempts, flagged by
-// reset_at) with its saved events in save order. The gateway's JWT check is off
+// reset_at) with its saved events in save order, plus the participants list
+// (email -> study_code). Emails appear only in `participants`, never in the
+// session or event rows, so the two can be stored and deleted separately. The gateway's JWT check is off
 // for this function (config.toml); the token check here is what protects the data.
 //
 // Reads in pages: Supabase caps a single select at 1000 rows, and a full study
@@ -40,6 +42,9 @@ serve(async (req) => {
             "session_id, event_id, test_id, item_id, presentation_index, received_at, payload",
             ["received_at", "session_id", "event_id"]);
 
+        const participants = await selectAll("participants", "email, study_code, created_at",
+            ["created_at", "email"]);
+
         const bySession = new Map<string, any[]>();
         for (const e of events) {
             if (!bySession.has(e.session_id)) bySession.set(e.session_id, []);
@@ -52,6 +57,7 @@ serve(async (req) => {
             exported_at: new Date().toISOString(),
             n_sessions: out.length,
             n_events: events.length,
+            participants,
             sessions: out,
         });
     } catch (err: any) {

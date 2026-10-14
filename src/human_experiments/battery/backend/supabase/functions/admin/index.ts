@@ -6,25 +6,19 @@
 //       Idempotent; the whole request is rejected if any code is malformed.
 //   generate_codes  { count: 20, prefix: "DRAT" }
 //       Create `count` new random codes, store them, and return them.
-//   reset_session   { study_code, session_number, reason }
-//       Archive the active session (reset_at set, events kept) so the code can
-//       start that session again. The slot is kept. Session 1 cannot be reset
+//   reset_session   { email | study_code, session_number, reason }
+//       Archive the active session (reset_at set, events kept) so the
+//       participant can start that visit again. The slot is kept. Session 1 cannot be reset
 //       while an active Session 2 exists; reset Session 2 first.
 //
-// Only deidentified codes ever reach this backend; the code-to-person key is
-// held by the study team elsewhere.
+// Participants now sign in with their Stony Brook email, which the server
+// maps to an internal code (participants table); add_codes / generate_codes
+// remain for researcher test codes only.
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { CORS, STUDY_CODE_RE, db, error, json, normalizeCode, requireResearcher } from "../_shared/common.ts";
+import { CORS, STUDY_CODE_RE, db, error, json, normalizeCode, normalizeEmail, randomCode, requireResearcher } from "../_shared/common.ts";
 
 const MAX_CODES_PER_REQUEST = 1000;
-// No 0/O/1/I/L, so codes survive being read aloud or handwritten.
-const CODE_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
-
-function randomSuffix(length: number): string {
-    const bytes = crypto.getRandomValues(new Uint8Array(length));
-    return Array.from(bytes, (b) => CODE_ALPHABET[b % CODE_ALPHABET.length]).join("");
-}
 
 async function addCodes(codes: string[]) {
     const { data, error: err } = await db()
@@ -74,7 +68,7 @@ serve(async (req) => {
                     return error(400, "invalid_request", "prefix must be 1–10 letters or digits");
                 }
                 const codes = new Set<string>();
-                while (codes.size < count) codes.add(`${prefix}-${randomSuffix(6)}`);
+                while (codes.size < count) codes.add(randomCode(prefix, 6));
                 for (const c of codes) if (!STUDY_CODE_RE.test(c)) throw new Error(`bad generated code ${c}`);
                 const result = await addCodes([...codes]);
                 if (result.already_present.length) {
@@ -85,13 +79,24 @@ serve(async (req) => {
             }
 
             case "reset_session": {
-                const code = normalizeCode(body.study_code);
                 const sessionNumber = body.session_number;
                 const reason = typeof body.reason === "string" ? body.reason.trim() : "";
-                if (!code || (sessionNumber !== 1 && sessionNumber !== 2) || !reason) {
-                    return error(400, "invalid_request", "study_code, session_number (1|2) and reason are required");
-                }
                 const supabase = db();
+                let code: string | null = null;
+                if (body.email !== undefined) {
+                    const email = normalizeEmail(body.email);
+                    if (!email) return error(400, "invalid_request", "email must be a @stonybrook.edu address");
+                    const { data: p, error: pErr } = await supabase.from("participants")
+                        .select("study_code").eq("email", email).maybeSingle();
+                    if (pErr) throw pErr;
+                    if (!p) return error(404, "unknown_email", "No participant has this email.");
+                    code = p.study_code;
+                } else {
+                    code = normalizeCode(body.study_code);
+                }
+                if (!code || (sessionNumber !== 1 && sessionNumber !== 2) || !reason) {
+                    return error(400, "invalid_request", "email or study_code, session_number (1|2) and reason are required");
+                }
                 if (sessionNumber === 1) {
                     const { data: s2 } = await supabase.from("study_sessions").select("id")
                         .eq("study_code", code).eq("session_number", 2).is("reset_at", null).maybeSingle();

@@ -16,8 +16,10 @@ export const MANIFEST = manifest as {
     drat_by_slot: string[][];
 };
 
-// Same rule as the frontend's study-code.js.
+// Internal participant codes (minted per email, or loaded by researchers).
 export const STUDY_CODE_RE = /^[A-Z0-9][A-Z0-9-]{2,31}$/;
+// Same rule as the frontend's study-code.js and the participants table check.
+export const EMAIL_RE = /^[a-z0-9][a-z0-9._%+-]{0,63}@stonybrook\.edu$/;
 export const MAX_EVENT_BYTES = 64 * 1024;
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -85,6 +87,20 @@ export function normalizeCode(raw: unknown): string | null {
     if (typeof raw !== "string") return null;
     const code = raw.trim().toUpperCase();
     return STUDY_CODE_RE.test(code) ? code : null;
+}
+
+export function normalizeEmail(raw: unknown): string | null {
+    if (typeof raw !== "string") return null;
+    const email = raw.trim().toLowerCase();
+    return EMAIL_RE.test(email) ? email : null;
+}
+
+// No 0/O/1/I/L, so codes survive being read aloud or handwritten.
+const CODE_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
+
+export function randomCode(prefix: string, length: number): string {
+    const bytes = crypto.getRandomValues(new Uint8Array(length));
+    return `${prefix}-` + Array.from(bytes, (b) => CODE_ALPHABET[b % CODE_ALPHABET.length]).join("");
 }
 
 // Exact item IDs a session must contain, keyed by item_id -> test_id.

@@ -1,22 +1,31 @@
 // POST /start-session
-//   { protocol_version, study_code, session_number, session1_order_index,
+//   { protocol_version, email, session_number, session1_order_index,
 //     consent_version, consent_accepted_at }
 //
-// Starts or resumes a session for an issued study code. The server is
-// authoritative for the slot, persisted meeting order and Session 1 -> 2 gate.
+// Starts or resumes a visit for a Stony Brook email. The email is mapped to an
+// internal study code (participants table); everything else is keyed by that
+// code, which is returned to the browser. The server is authoritative for the
+// slot, persisted meeting order and Visit 1 -> 2 gate.
+//
+// Consent: Visit 1 may be requested without consent. If the email already has
+// an active Visit 1 it resumes (consent was recorded the first time);
+// otherwise the reply is consent_required and the browser asks for consent and
+// calls again. A new participant is only created once consent is given.
+// Visit 2 only accepts an email that already has a participant record, so a
+// typo cannot silently start a new person.
+//
 // Every call issues a fresh session token (only its hash is stored), so
-// re-entering the code on another computer resumes there and invalidates
+// re-entering the email on another computer resumes there and invalidates
 // the old tab. Returns the item IDs already saved so the browser can skip them.
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { CORS, MANIFEST, db, error, json, normalizeCode, randomToken, sha256Hex } from "../_shared/common.ts";
+import { CORS, MANIFEST, db, error, json, normalizeEmail, randomCode, randomToken, sha256Hex } from "../_shared/common.ts";
 
 const STATUS_ERRORS: Record<string, [number, string]> = {
-    unknown_code: [404, "This study code was not found. Check it with a researcher."],
-    session1_incomplete: [409, "Session 2 can only start after Session 1 is complete for this study code."],
+    session1_incomplete: [409, "Visit 2 can only start after Visit 1 is complete for this email."],
     slots_full: [409, "No study slots are left. Tell a researcher."],
-    order_mismatch: [409, "This study code already started Session 1 with a different meeting-order URL."],
-    invalid_start: [400, "The session start details are incomplete."],
+    order_mismatch: [409, "This email already started Visit 1 with a different meeting-order URL."],
+    invalid_start: [400, "The visit start details are incomplete."],
 };
 
 serve(async (req) => {
@@ -30,8 +39,8 @@ serve(async (req) => {
         return error(400, "protocol_mismatch",
             `protocol_version must be ${MANIFEST.protocol_version}; reload the page.`);
     }
-    const code = normalizeCode(body.study_code);
-    if (!code) return error(400, "invalid_code", "Use 3–32 letters, numbers, or hyphens.");
+    const email = normalizeEmail(body.email);
+    if (!email) return error(400, "invalid_email", "Enter your Stony Brook email (name@stonybrook.edu).");
     const sessionNumber = body.session_number;
     if (sessionNumber !== 1 && sessionNumber !== 2) {
         return error(400, "invalid_session", "session_number must be 1 or 2");
@@ -43,19 +52,38 @@ serve(async (req) => {
         const requestedOrder = body.session1_order_index;
         if (!Number.isInteger(requestedOrder) || requestedOrder < 0 ||
             requestedOrder >= MANIFEST.session1_orders.length) {
-            return error(400, "invalid_order", "Session 1 requires a meeting order from 1 to 6.");
+            return error(400, "invalid_order", "Visit 1 requires a meeting order from 1 to 6.");
         }
         orderIndex = requestedOrder;
-        consentVersion = body.consent_version;
-        consentAcceptedAt = body.consent_accepted_at;
-        if (consentVersion !== MANIFEST.consent_version || typeof consentAcceptedAt !== "string" ||
-            Number.isNaN(Date.parse(consentAcceptedAt))) {
-            return error(400, "invalid_consent", "Consent must be accepted before Session 1 starts.");
+        if (body.consent_version != null || body.consent_accepted_at != null) {
+            consentVersion = body.consent_version;
+            consentAcceptedAt = body.consent_accepted_at;
+            if (consentVersion !== MANIFEST.consent_version || typeof consentAcceptedAt !== "string" ||
+                Number.isNaN(Date.parse(consentAcceptedAt))) {
+                return error(400, "invalid_consent", "Consent must be accepted before Visit 1 starts.");
+            }
         }
+    }
+    const hasConsent = consentVersion !== null;
+    const consentRequired = () => error(409, "consent_required", "Consent is required before Visit 1 starts.");
+
+    const supabase = db();
+    const { data: code, error: codeErr } = await supabase.rpc("participant_code", {
+        p_email: email,
+        p_new_code: randomCode("P", 8),
+        p_create: sessionNumber === 1 && hasConsent,
+    });
+    if (codeErr) {
+        console.error("participant_code failed", codeErr.message);
+        return error(500, "db_error", codeErr.message);
+    }
+    if (!code) {
+        return sessionNumber === 1 ? consentRequired()
+            : error(404, "unknown_email",
+                "No Visit 1 was found for this email. Check the spelling, or ask a researcher.");
     }
 
     const token = randomToken();
-    const supabase = db();
     const { data, error: err } = await supabase.rpc("start_session", {
         p_code: code,
         p_session_number: sessionNumber,
@@ -72,6 +100,7 @@ serve(async (req) => {
         return error(500, "db_error", err.message);
     }
     const row = Array.isArray(data) ? data[0] : data;
+    if (row.status === "invalid_start" && sessionNumber === 1 && !hasConsent) return consentRequired();
     if (STATUS_ERRORS[row.status]) {
         const [status, message] = STATUS_ERRORS[row.status];
         return error(status, row.status, message);

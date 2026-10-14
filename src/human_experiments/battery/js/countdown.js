@@ -3,8 +3,9 @@
  *
  * jsPsych's survey-text / survey-html-form do NOT reliably auto-end on
  * `trial_duration`, so we don't depend on it: when the timer hits zero we
- * lock the trial's submit path for the full duration, then actively click the
- * submit button at zero. This records whatever has been typed (empty fields → "")
+ * lock the trial's submit path for the full duration (the submit button is
+ * hidden, per the 2026-10-13 meeting), then actively click it at zero. This
+ * records whatever has been typed (empty fields → "")
  * and prevents both button and Enter-key early submission.
  *
  * Time is measured against a fixed wall-clock deadline, not by counting ticks:
@@ -120,6 +121,7 @@ window.makeCountdown = function (seconds, opts) {
             if (!activeForm || !button) throw new Error("Timed task form is missing its submit control");
             activeForm.dataset.timerLocked = "true";
             button.disabled = true;
+            button.style.display = "none";   // jsPsych CSS overrides the hidden attribute
             button.setAttribute("aria-disabled", "true");
             button.setAttribute("title", "This task submits automatically when the timer reaches zero.");
             preventEarlySubmit = (event) => {
