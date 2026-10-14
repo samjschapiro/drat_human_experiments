@@ -70,6 +70,8 @@ const fakeRoot = {
 };
 global.document = {
     getElementById: (id) => id === "jspsych-content" ? fakeRoot : null,
+    addEventListener: () => {},
+    removeEventListener: () => {},
 };
 require("../js/countdown.js");
 const countdown = window.makeCountdown(30, { onExpire: window.submitBatteryForm });

@@ -7,6 +7,11 @@
  * submit button at zero. This records whatever has been typed (empty fields → "")
  * and prevents both button and Enter-key early submission.
  *
+ * Time is measured against a fixed wall-clock deadline, not by counting ticks:
+ * browsers slow down timers in background tabs, and a tick counter then lets a
+ * 15 s item stay up for 30-50 s. The tick only re-reads the clock, and the
+ * clock is re-checked as soon as the tab becomes visible again.
+ *
  * The interval is always cleared in stop() (called from the trial's on_finish),
  * so a stale timer can never bleed into the next trial.
  *
@@ -71,6 +76,7 @@ window.makeCountdown = function (seconds, opts) {
 
     const ID = "battery-countdown-" + Math.floor(seconds * 1000 + (opts.tag || 0));
     let intervalId = null;
+    let deadline = null;
     let remaining = seconds;
     let didExpire = false;
     let activeForm = null;
@@ -86,12 +92,26 @@ window.makeCountdown = function (seconds, opts) {
         el.style.color = remaining <= 10 ? "#b91c1c" : "#374151";
     }
 
+    function tick() {
+        if (!intervalId) return;
+        remaining = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+        render();
+        if (remaining <= 0) {
+            didExpire = true;
+            clearInterval(intervalId);
+            intervalId = null;
+            document.removeEventListener("visibilitychange", tick);
+            if (opts.onExpire) opts.onExpire({ allowEmpty: true });
+        }
+    }
+
     return {
         html() {
             return `<div id="${ID}" style="font-weight:600;font-size:15px;` +
                    `margin-bottom:12px;text-align:center"></div>`;
         },
         start() {
+            deadline = Date.now() + seconds * 1000;
             remaining = seconds;
             didExpire = false;
             const root = document.getElementById("jspsych-content") || document;
@@ -109,18 +129,12 @@ window.makeCountdown = function (seconds, opts) {
             };
             activeForm.addEventListener("submit", preventEarlySubmit, true);
             render();
-            intervalId = setInterval(() => {
-                remaining -= 1;
-                render();
-                if (remaining <= 0) {
-                    didExpire = true;
-                    if (intervalId) { clearInterval(intervalId); intervalId = null; }
-                    if (opts.onExpire) opts.onExpire({ allowEmpty: true });
-                }
-            }, 1000);
+            intervalId = setInterval(tick, 250);
+            document.addEventListener("visibilitychange", tick);
         },
         stop() {
             if (intervalId) { clearInterval(intervalId); intervalId = null; }
+            document.removeEventListener("visibilitychange", tick);
             if (activeForm && preventEarlySubmit) {
                 activeForm.removeEventListener("submit", preventEarlySubmit, true);
             }
