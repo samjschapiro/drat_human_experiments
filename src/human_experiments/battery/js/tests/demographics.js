@@ -1,5 +1,6 @@
 window.STUDY_MODULES = window.STUDY_MODULES || {};
-// Demographics (Babak's question set, 2026-10-15). Every shown question is
+// Demographics (Babak's question set, 2026-10-15, plus major from the earlier version).
+// Every shown question is
 // required; "Year" appears only for "Some college" and "Native language" only
 // for non-native English speakers. Hidden questions are disabled, so they are
 // neither required nor saved. Choosing "Other" makes its text box required.
@@ -22,6 +23,8 @@ window.STUDY_MODULES.demographics = function buildDemographics() {
             "4 year degree", "Professional degree", "Doctorate"])),
         field("college_year", "Please select your highest year in college:",
               radios("college_year", ["Freshman", "Sophomore", "Junior", "Senior"]) + other("college_year")),
+        field("major", "What is your major or main field of study?",
+              `<input type="text" name="major" autocomplete="off" style="padding:7px;width:90%">`),
         field("gender", "Which gender do you best identify yourself with?",
               radios("gender", ["Male", "Female", "Non-binary / third gender", "Prefer not to say"]) + other("gender")),
         field("ethnicity", "Select the race/ethnicity or race/ethnicities that best describe you.",
@@ -58,6 +61,7 @@ window.STUDY_MODULES.demographics = function buildDemographics() {
             inputs(name)[0].required = true;
         }
         inputs("native_language")[0].required = true;
+        inputs("major")[0].required = true;
 
         function update() {
             setShown("college_year", checked("education", "Some college"));
@@ -92,7 +96,7 @@ window.STUDY_MODULES.demographics = function buildDemographics() {
         html,
         button_label: "Continue",
         data: { test: "demographics", item_id: "demographics", battery_tag: "task",
-                displayed_stimuli: { questionnaire_version: "Demographics_Babak_2026-10-15" } },
+                displayed_stimuli: { questionnaire_version: "Demographics_Babak_2026-10-15_major" } },
         on_load: wire,
     }];
 };
