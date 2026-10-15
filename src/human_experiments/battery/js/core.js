@@ -63,9 +63,11 @@ function recordableResponse(data) {
 
 function attachCapture(timeline, store) {
     const remaining = [];
-    for (const trial of timeline) {
+    for (const [index, trial] of timeline.entries()) {
         if (trial.data?.battery_tag !== "task") {
-            remaining.push(trial);
+            // On resume, skip an instruction screen whose next task is already saved.
+            const nextTask = timeline.slice(index + 1).find((t) => t.data?.battery_tag === "task");
+            if (!nextTask || !store.hasItem(nextTask.data.item_id)) remaining.push(trial);
             continue;
         }
         if (!trial.data.item_id) throw new Error("Every study task must have a stable item ID");
