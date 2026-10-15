@@ -13,6 +13,7 @@ export const MANIFEST = manifest as {
     session2_order: string[];
     session1_items: Record<string, string[]>;
     session2_items: Record<string, string[]>;
+    session2_optional_items: Record<string, string[]>;
     drat_by_slot: string[][];
 };
 
@@ -160,6 +161,16 @@ export function expectedItems(sessionNumber: number, slot: number): Map<string, 
     const groups = sessionNumber === 1 ? MANIFEST.session1_items : MANIFEST.session2_items;
     for (const [testId, ids] of Object.entries(groups)) for (const id of ids) items.set(id, testId);
     if (sessionNumber === 2) for (const id of MANIFEST.drat_by_slot[slot]) items.set(id, "drat");
+    return items;
+}
+
+// Items a session may save but does not need to finish (e.g. the DRAT practice).
+export function optionalItems(sessionNumber: number): Map<string, string> {
+    const items = new Map<string, string>();
+    if (sessionNumber !== 2) return items;
+    for (const [testId, ids] of Object.entries(MANIFEST.session2_optional_items)) {
+        for (const id of ids) items.set(id, testId);
+    }
     return items;
 }
 

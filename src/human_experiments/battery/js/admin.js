@@ -101,7 +101,8 @@
             code: s.study_code,
             visit: s.session_number,
             slot: s.slot,
-            tasks: `${s.events.length}/${EXPECTED_TASKS[s.session_number]}`,
+            // The DRAT practice is saved but optional, so it is not counted.
+            tasks: `${s.events.filter((e) => e.item_id !== "drat_practice").length}/${EXPECTED_TASKS[s.session_number]}`,
             state: s.reset_at ? "reset" : (s.complete ? "complete" : "in progress"),
             last: s.completed_at || s.updated_at,
             active: !s.reset_at,

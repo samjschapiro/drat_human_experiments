@@ -20,11 +20,7 @@ window.BATTERY_MODULES["dat"] = {
                 `style="font-size:16px;padding:6px 8px;width:240px"></div>`;
         }
 
-        const intro = {
-            type: jsPsychInstructions,
-            pages: [cfg.intro_html],
-            show_clickable_nav: true,
-        };
+        const intro = window.timedInstructions(cfg.intro_html, cfg.intro_delay_sec);
 
         const task = {
             type: jsPsychSurveyHtmlForm,

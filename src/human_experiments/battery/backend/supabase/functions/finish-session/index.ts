@@ -5,7 +5,7 @@
 // Session 2). Idempotent. A completed Session 1 is what unlocks Session 2.
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { CORS, db, error, expectedItems, json, sessionForToken } from "../_shared/common.ts";
+import { CORS, db, error, expectedItems, json, optionalItems, sessionForToken } from "../_shared/common.ts";
 
 serve(async (req) => {
     if (req.method === "OPTIONS") return new Response(null, { headers: CORS });
@@ -25,10 +25,11 @@ serve(async (req) => {
     const saved = new Set((events ?? []).map((e: any) => e.item_id));
     const expected = expectedItems(session.session_number, session.slot);
     const missing = [...expected.keys()].filter((id) => !saved.has(id));
-    const unexpected = [...saved].filter((id) => !expected.has(id));
+    const optional = optionalItems(session.session_number);
+    const unexpected = [...saved].filter((id) => !expected.has(id) && !optional.has(id));
     if (missing.length || unexpected.length) {
         return error(409, "incomplete",
-            `Session has ${saved.size} of ${expected.size} expected tasks saved.`,
+            `Session has ${expected.size - missing.length} of ${expected.size} expected tasks saved.`,
             { missing_item_ids: missing, unexpected_item_ids: unexpected });
     }
 

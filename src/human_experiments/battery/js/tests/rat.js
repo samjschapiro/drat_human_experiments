@@ -11,11 +11,7 @@ window.BATTERY_MODULES["rat"] = {
         // Per-participant item order (seeded by slot so it's reproducible).
         const items = ctx.seededShuffle(bank, ctx.slot * 31 + 7);
 
-        const intro = {
-            type: jsPsychInstructions,
-            pages: [cfg.intro_html],
-            show_clickable_nav: true,
-        };
+        const intro = window.timedInstructions(cfg.intro_html, cfg.intro_delay_sec);
 
         const trials = items.map((item, idx) => {
             const cd = ctx.makeCountdown(cfg.item_time_limit_sec,

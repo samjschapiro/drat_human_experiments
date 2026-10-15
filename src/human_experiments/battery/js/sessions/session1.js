@@ -1,4 +1,37 @@
 window.STUDY_SESSIONS = window.STUDY_SESSIONS || {};
+
+// Primary task instructions, aligned with the standard versions (Babak, 2026-10-15).
+// Each Next button appears only after the reading delay.
+const RULES_LIST = (rules) =>
+    `<ul style="text-align:left;display:inline-block;margin:0">${rules.map((r) => `<li>${r}</li>`).join("")}</ul>`;
+
+window.STUDY_INSTRUCTIONS = window.STUDY_INSTRUCTIONS || {};
+window.STUDY_INSTRUCTIONS.dat = {
+    intro_delay_sec: 20,
+    intro_html: "<h2>Word Task</h2>" +
+        "<p>On the next page, you will be asked to enter <b>10 words</b> that are " +
+        "<b>as different from each other as possible</b>, in all meanings and uses of the words.</p>" +
+        "<p><b>Rules:</b></p>" + RULES_LIST([
+            "Only single words in English.",
+            "Only nouns (e.g., things, objects, concepts).",
+            "No proper nouns (e.g., no specific people or places).",
+            "No specialized vocabulary (e.g., no technical terms).",
+            "Think of the words on your own (e.g., do not just look at objects in your surroundings).",
+        ]) +
+        "<p>You will have 4 minutes. When you are ready to begin, press Next below when the button appears.</p>",
+};
+window.STUDY_INSTRUCTIONS.rat = {
+    intro_delay_sec: 15,
+    intro_html: "<h2>Word Connections</h2>" +
+        "<p>On each screen you will see <b>three words</b>. Your task is to type the <b>single word</b> " +
+        "that connects all three. The connecting word forms a compound word or a common phrase with " +
+        "each of them, and it can come before or after each word.</p>" +
+        "<p>Example: <b>cottage / swiss / cake</b> &rarr; <b>cheese</b> " +
+        "(cottage cheese, swiss cheese, cheesecake)</p>" +
+        "<p>You will have 15 seconds for each set of words. If you have not answered when time runs out, " +
+        "the task will move on to the next set. When you are ready, press Next.</p>",
+};
+
 window.STUDY_SESSIONS.buildSession1 = function buildSession1(ctx) {
     const timeline = [];
     for (const testId of ctx.order) {
@@ -6,11 +39,7 @@ window.STUDY_SESSIONS.buildSession1 = function buildSession1(ctx) {
             timeline.push(...window.STUDY_MODULES.raven(ctx));
             continue;
         }
-        const cfg = { ...ctx.config.tests[testId] };
-        if (testId === "dat") {
-            cfg.intro_html = `<h2>Word Association</h2><p>Please enter 10 words that are as different from each other as possible, in all meanings and uses of the words.</p>
-                <p>Rules: only single words; only nouns (things, objects, or concepts); no proper nouns; no specialized vocabulary; think of the words on your own rather than simply naming objects around you.</p>`;
-        }
+        const cfg = { ...ctx.config.tests[testId], ...window.STUDY_INSTRUCTIONS[testId] };
         timeline.push(...window.BATTERY_MODULES[testId].buildTimeline(cfg, {
             ...ctx, itemBank: window.ITEM_BANKS[testId],
         }));

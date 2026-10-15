@@ -146,3 +146,50 @@ window.makeCountdown = function (seconds, opts) {
         expired() { return didExpire; },
     };
 };
+
+/*
+ * Reading delay for instruction screens: the screen's buttons stay hidden (no
+ * visible countdown, so attention stays on the text) until `seconds` have
+ * passed, measured against a wall-clock deadline like the task timers. Call
+ * from the trial's on_load. Instruction trials must also set allow_keys: false
+ * so the arrow keys cannot skip ahead.
+ */
+window.revealButtonsAfter = function revealButtonsAfter(seconds, selector) {
+    const root = document.getElementById("jspsych-content") || document;
+    const buttons = [...root.querySelectorAll(selector || "button")];
+    if (!buttons.length) throw new Error("Instruction screen has no button to delay");
+    for (const button of buttons) {
+        button.dataset.revealDisplay = button.style.display;
+        button.style.display = "none";
+        button.disabled = true;
+    }
+    const deadline = Date.now() + seconds * 1000;
+    let intervalId = null;
+    function check() {
+        if (Date.now() < deadline) return;
+        clearInterval(intervalId);
+        document.removeEventListener("visibilitychange", check);
+        for (const button of buttons) {
+            button.style.display = button.dataset.revealDisplay;
+            button.disabled = false;
+        }
+    }
+    intervalId = setInterval(check, 250);
+    document.addEventListener("visibilitychange", check);
+};
+
+// A single-page instruction screen whose Next button appears after `seconds`.
+window.timedInstructions = function timedInstructions(html, seconds) {
+    return {
+        type: jsPsychInstructions,
+        pages: [html],
+        show_clickable_nav: true,
+        allow_keys: false,
+        button_label_next: "Next >",
+        on_load: () => {
+            const previous = document.getElementById("jspsych-instructions-back");
+            if (previous) previous.style.display = "none";
+            if (seconds) window.revealButtonsAfter(seconds, "#jspsych-instructions-next");
+        },
+    };
+};

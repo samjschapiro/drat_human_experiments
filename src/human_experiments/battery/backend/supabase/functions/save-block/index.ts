@@ -8,7 +8,7 @@
 
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import {
-    CORS, MANIFEST, MAX_EVENT_BYTES, db, error, expectedItems, json, sessionForToken,
+    CORS, MANIFEST, MAX_EVENT_BYTES, db, error, expectedItems, json, optionalItems, sessionForToken,
 } from "../_shared/common.ts";
 
 serve(async (req) => {
@@ -46,7 +46,8 @@ serve(async (req) => {
     if (event.consent_accepted_at !== session.consent_accepted_at) {
         mismatches.push("consent_accepted_at");
     }
-    const expected = expectedItems(session.session_number, session.slot);
+    const expected = new Map([...expectedItems(session.session_number, session.slot),
+                              ...optionalItems(session.session_number)]);
     const itemId = event.item_id;
     if (typeof itemId !== "string" || !expected.has(itemId)) mismatches.push("item_id");
     else if (event.test_id !== expected.get(itemId)) mismatches.push("test_id");

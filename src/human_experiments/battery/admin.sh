@@ -54,7 +54,8 @@ for s in data["sessions"]:
     if only and only not in (s["study_code"].lower(), email):
         continue
     state = "RESET" if s["reset_at"] else ("complete" if s["complete"] else "in progress")
-    tasks = f"{len(s['events'])}/{expected[s['session_number']]}"
+    required = [e for e in s['events'] if e['item_id'] != 'drat_practice']  # practice is optional
+    tasks = f"{len(required)}/{expected[s['session_number']]}"
     when = (s["completed_at"] or s["updated_at"])[:19].replace("T", " ")
     rows.append((email, s["study_code"], s["session_number"], s["slot"], tasks, state, when))
 print(f"{'email':<32} {'code':<12} {'visit':>5} {'slot':>4} {'tasks':>6}  {'state':<12} last activity (UTC)")

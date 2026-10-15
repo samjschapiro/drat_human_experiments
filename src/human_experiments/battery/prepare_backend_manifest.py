@@ -20,6 +20,9 @@ SESSION2_ORDER = ["drat", "sctt"]
 SESSION1_FIXED = {"raven": ["raven_handoff", "raven_return"], "dat": ["dat_single"],
                   "bfi10": ["bfi10"], "demographics": ["demographics"]}
 SESSION2_FIXED = {"break": ["session2_break"], "attention": ["attention_orange"]}
+# Saved when shown but not required to finish (added mid-pilot, 2026-10-15, so
+# visits already past DRAT can still complete).
+SESSION2_OPTIONAL = {"drat_practice": ["drat_practice"]}
 EXPECTED_SESSION1 = 35
 EXPECTED_SESSION2 = 22
 
@@ -83,6 +86,7 @@ def main() -> None:
         "session2_order": SESSION2_ORDER,
         "session1_items": session1,            # test_id -> item ids (same for every slot)
         "session2_items": session2_fixed,      # plus "drat" from drat_by_slot[slot]
+        "session2_optional_items": SESSION2_OPTIONAL,
         "drat_by_slot": drat_by_slot,
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)
