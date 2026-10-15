@@ -26,8 +26,10 @@ window.STUDY_INSTRUCTIONS.rat = {
         "<p>On each screen you will see <b>three words</b>. Your task is to type the <b>single word</b> " +
         "that connects all three. The connecting word forms a compound word or a common phrase with " +
         "each of them, and it can come before or after each word.</p>" +
-        "<p>Example: <b>cottage / swiss / cake</b> &rarr; <b>cheese</b> " +
-        "(cottage cheese, swiss cheese, cheesecake)</p>" +
+        // Example is CRA item 35, outside the 30 scored items (item 1, the old
+        // cheese example, is scored).
+        "<p>Example: <b>sleeping / bean / trash</b> &rarr; <b>bag</b> " +
+        "(sleeping bag, beanbag, trash bag)</p>" +
         "<p>You will have 15 seconds for each set of words. If you have not answered when time runs out, " +
         "the task will move on to the next set. When you are ready, press Next.</p>",
 };
