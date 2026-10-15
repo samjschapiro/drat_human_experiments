@@ -5,7 +5,7 @@ window.STUDY_SESSIONS.buildSession2 = function buildSession2(ctx) {
     const rules = (items) =>
         `<ul style="text-align:left;display:inline-block;margin:0">${items.map((r) => `<li>${r}</li>`).join("")}</ul>`;
     // Instructions aligned with the standard versions (Babak, 2026-10-15); each
-    // Next button appears only after the reading delay.
+    // Next button becomes active only after the reading delay.
     const dratConfig = {
         n_words: 10,
         time_limit_sec: 120,
@@ -30,7 +30,7 @@ window.STUDY_SESSIONS.buildSession2 = function buildSession2(ctx) {
             ]) +
             "<p>There are 8 sets of anchor words. Each set stays on screen for 2 minutes; the task will " +
             "advance automatically afterwards. You will first complete one practice set for 60 seconds.</p>" +
-            "<p>When you are ready to begin, press Next below when the button appears.</p>",
+            "<p>When you are ready to begin, press Next below when the button becomes active.</p>",
         practice: { anchors: ["home", "journey"], time_limit_sec: 60 },
         post_practice_html: "<p>If anything about this task is still unclear after this practice, " +
             "<b>please raise your hand now</b>.</p><p>You can press Next &gt; when ready to start the main task.</p>",
@@ -44,7 +44,7 @@ window.STUDY_SESSIONS.buildSession2 = function buildSession2(ctx) {
             "<p>The goal is to come up with ideas that are <b>original</b> (unusual, unique, innovative) while " +
             "also being <b>scientifically possible</b> (practical and feasible).</p>" +
             "<p>The task has three short sections. Take your time; it usually takes 20\u201330 minutes in total.</p>" +
-            "<p>When you are ready to begin, press Next below when the button appears.</p>",
+            "<p>When you are ready to begin, press Next below when the button becomes active.</p>",
         sections: [
             { task: "research question", delay_sec: 8, html: "<h2>Part 1</h2><p>For each scenario, list " +
                 "<b>three research questions</b> that are creative, different from each other, and scientifically testable.</p>" },

@@ -4,7 +4,7 @@ window.STUDY_MODULES = window.STUDY_MODULES || {};
 // group session code (set by researchers in /admin, re-checked every few
 // seconds so an overwrite shows up). Clicking the code or "here" copies it.
 // It is recorded as two items: raven_handoff ends when the participant opens
-// Pearson, and raven_return shows the same page, whose finish button appears
+// Pearson, and raven_return shows the same page, whose finish button becomes active
 // only 10 minutes after Pearson was opened.
 window.STUDY_MODULES.raven = function buildRaven(ctx) {
     const url = ctx.ravenUrl;
@@ -30,7 +30,7 @@ window.STUDY_MODULES.raven = function buildRaven(ctx) {
               to open the task in a new tab.${opened ? " <i>(opened)</i>" : ""}</li>
           <li>Paste the copied Session Code into the corresponding field and answer the CAPTCHA question.</li>
           <li>Enter your information and advance. When you see the symbol of an ear, <b>WAIT</b> for verbal instructions.</li>
-          <li>Return to this tab once the task is finished and click the button that will appear below to advance.</li>
+          <li>Return to this tab once the task is finished and click the button below to advance once it becomes active.</li>
         </ol>
         ${opened ? `<p style="margin-top:18px"><strong>Please do not move forward until you have finished the Pearson test.</strong></p>` : ""}`;
 

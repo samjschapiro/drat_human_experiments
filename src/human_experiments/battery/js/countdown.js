@@ -148,44 +148,75 @@ window.makeCountdown = function (seconds, opts) {
 };
 
 /*
- * Reading delay for instruction screens: the screen's buttons stay hidden (no
- * visible countdown, so attention stays on the text) until `seconds` have
- * passed, measured against a wall-clock deadline like the task timers. Call
- * from the trial's on_load. Instruction trials must also set allow_keys: false
- * so the arrow keys cannot skip ahead.
+ * Reading delay for instruction screens: the screen's buttons stay visible but
+ * greyed out until `seconds` have passed, measured against a wall-clock
+ * deadline like the task timers. No countdown is shown on the page (attention
+ * stays on the text); hovering a button shows the time left. Call from the
+ * trial's on_load. Instruction trials must also set allow_keys: false so the
+ * arrow keys cannot skip ahead.
  */
 window.revealButtonsAfter = function revealButtonsAfter(seconds, selector) {
     const root = document.getElementById("jspsych-content") || document;
     const buttons = [...root.querySelectorAll(selector || "button")];
     if (!buttons.length) throw new Error("Instruction screen has no button to delay");
-    for (const button of buttons) {
-        button.dataset.revealDisplay = button.style.display;
-        button.style.display = "none";
-        button.disabled = true;
-    }
     const deadline = Date.now() + seconds * 1000;
+    const tip = document.createElement("div");
+    tip.setAttribute("role", "status");
+    tip.style.cssText = "position:fixed;z-index:1000;display:none;padding:4px 10px;border-radius:4px;" +
+        "background:#1f2937;color:white;font-size:14px;pointer-events:none;white-space:nowrap";
+    document.body.appendChild(tip);
+    const wrappers = buttons.map((button) => {
+        button.disabled = true;
+        // Disabled buttons get no mouse events, so the wrapper catches the hover.
+        button.style.pointerEvents = "none";
+        const wrapper = document.createElement("span");
+        wrapper.style.display = "inline-block";
+        button.replaceWith(wrapper);
+        wrapper.appendChild(button);
+        wrapper.addEventListener("mouseenter", () => { tip.style.display = ""; update(wrapper); });
+        wrapper.addEventListener("mouseleave", () => { tip.style.display = "none"; });
+        return wrapper;
+    });
+    function label() {
+        const left = Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+        return left >= 60 ? `Available in ${Math.floor(left / 60)} min ${left % 60} s` : `Available in ${left} s`;
+    }
+    function update(wrapper) {
+        tip.textContent = label();
+        const box = wrapper.getBoundingClientRect();
+        tip.style.left = `${box.left + box.width / 2 - tip.offsetWidth / 2}px`;
+        tip.style.top = `${box.top - tip.offsetHeight - 8}px`;
+    }
     let intervalId = null;
     function check() {
-        if (Date.now() < deadline) return;
+        if (tip.style.display !== "none") tip.textContent = label();
+        if (Date.now() < deadline && document.body.contains(tip)) return;
         clearInterval(intervalId);
         document.removeEventListener("visibilitychange", check);
-        for (const button of buttons) {
-            button.style.display = button.dataset.revealDisplay;
+        tip.remove();
+        for (const [i, button] of buttons.entries()) {
             button.disabled = false;
+            button.style.pointerEvents = "";
+            wrappers[i].replaceWith(button);
         }
     }
+    // The tooltip leaves with the screen even if the trial ends some other way.
+    const observer = new MutationObserver(() => {
+        if (!buttons.some((button) => document.body.contains(button))) { tip.remove(); observer.disconnect(); }
+    });
+    observer.observe(root, { childList: true, subtree: true });
     intervalId = setInterval(check, 250);
     document.addEventListener("visibilitychange", check);
 };
 
-// A single-page instruction screen whose Next button appears after `seconds`.
+// A single-page instruction screen whose Next button becomes active after `seconds`.
 window.timedInstructions = function timedInstructions(html, seconds) {
     return {
         type: jsPsychInstructions,
         pages: [html],
         show_clickable_nav: true,
         allow_keys: false,
-        button_label_next: "Next >",
+        button_label_next: "Next",   // jsPsych appends " >"
         on_load: () => {
             const previous = document.getElementById("jspsych-instructions-back");
             if (previous) previous.style.display = "none";

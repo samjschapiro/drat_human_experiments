@@ -1,7 +1,7 @@
 window.STUDY_SESSIONS = window.STUDY_SESSIONS || {};
 
 // Primary task instructions, aligned with the standard versions (Babak, 2026-10-15).
-// Each Next button appears only after the reading delay.
+// Each Next button becomes active only after the reading delay.
 const RULES_LIST = (rules) =>
     `<ul style="text-align:left;display:inline-block;margin:0">${rules.map((r) => `<li>${r}</li>`).join("")}</ul>`;
 
@@ -18,7 +18,7 @@ window.STUDY_INSTRUCTIONS.dat = {
             "No specialized vocabulary (e.g., no technical terms).",
             "Think of the words on your own (e.g., do not just look at objects in your surroundings).",
         ]) +
-        "<p>You will have 4 minutes. When you are ready to begin, press Next below when the button appears.</p>",
+        "<p>You will have 4 minutes. When you are ready to begin, press Next below when the button becomes active.</p>",
 };
 window.STUDY_INSTRUCTIONS.rat = {
     intro_delay_sec: 15,
