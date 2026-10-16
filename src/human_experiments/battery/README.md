@@ -1,61 +1,133 @@
-# Creativity Battery (DAT · RAT · SCTT · DRAT)
+# Creativity and Reasoning Tasks (DRAT human study battery)
 
-## Current two-session development build
+The two-visit, in-person battery for the DRAT human study (IRB2026-00448).
+Participants sign in with their Stony Brook email.
 
-The `prit/study-backend-integration` branch combines the approved study flow with
-Wasiq's Supabase session/event backend. Development deployment is ready for the
-supervised pilot; production remains deliberately blocked in `core.js` until the
-study team approves launch.
+- **Visit 1:** consent, then DAT, RAT and Raven's (Pearson Q-global, in a new tab)
+  in the lab meeting's order, then BFI-10 and demographics. That is 35 saved items.
+- **Visit 2:** a DRAT practice set, the 8 DRAT sets, a break, the attention check
+  and the 12 SCTT items. That is 22 saved items, plus the practice set.
 
-Run it locally from this directory:
-
-```bash
-python3 -m http.server 8001
-```
-
-Then open `http://127.0.0.1:8001/?session=1&order=2&slot=0` or
-`http://127.0.0.1:8001/?session=2&slot=0`. Enter the same deidentified study code
-for both sessions. Session 1 requires `order=1` through `order=6`; every station in
-one lab meeting must use the same value. `slot` may be 0–259 and selects only the
-reproducible DRAT assignment. Each completed task is saved synchronously in browser
-storage; the completion screen downloads a deidentified JSON file. A refresh
+Every answer is saved to the server as soon as it is given. A reload or a crash
 resumes at the first unsaved task.
 
-| Lab order | Session 1 URL suffix | Task order |
+| Environment | Participant site | Admin panel | Use it for |
+|---|---|---|---|
+| dev | https://drat-dev.vercel.app | https://drat-dev.vercel.app/admin | Testing. Shows a DEV banner. Test data only. |
+| prod | https://drat-prod.vercel.app | https://drat-prod.vercel.app/admin | Real participants. Never wipe it. |
+
+The two environments use separate Supabase projects and separate Vercel projects,
+so a dev deploy can never write to the prod database.
+
+## Running a lab session
+
+Every station in a Visit 1 meeting opens the same URL, which fixes the task order:
+
+| Order | Visit 1 URL | Task order |
 |---|---|---|
-| 1 | `?session=1&order=1` | DAT → RAT → Raven |
-| 2 | `?session=1&order=2` | DAT → Raven → RAT |
-| 3 | `?session=1&order=3` | RAT → DAT → Raven |
-| 4 | `?session=1&order=4` | RAT → Raven → DAT |
-| 5 | `?session=1&order=5` | Raven → DAT → RAT |
-| 6 | `?session=1&order=6` | Raven → RAT → DAT |
+| 1 | `https://drat-prod.vercel.app/?session=1&order=1` | DAT → RAT → Raven's |
+| 2 | `https://drat-prod.vercel.app/?session=1&order=2` | DAT → Raven's → RAT |
+| 3 | `https://drat-prod.vercel.app/?session=1&order=3` | RAT → DAT → Raven's |
+| 4 | `https://drat-prod.vercel.app/?session=1&order=4` | RAT → Raven's → DAT |
+| 5 | `https://drat-prod.vercel.app/?session=1&order=5` | Raven's → DAT → RAT |
+| 6 | `https://drat-prod.vercel.app/?session=1&order=6` | Raven's → RAT → DAT |
 
-Use orders 1–4 for the first supervised pilot so Raven is second or third. Append a
-local `slot=0..259` only for local testing; production slot assignment belongs to
-the backend.
+Visit 2 uses `https://drat-prod.vercel.app/?session=2` and is locked until that
+email has finished Visit 1.
 
-Session 1 shows the approved stamped consent PDF, then runs DAT, RAT, and the Raven
-handoff in the meeting's fixed order, followed by BFI-10 and demographics. Raven
-opens Pearson Q-global self-registration in a new tab; the current group code is
-given verbally by the researcher and is never stored in the app. Session 2 runs all
-eight DRAT design cells, a break, the orange attention check, and the 12-item SCTT.
-On every protocol-timed screen, Submit is locked for the full duration and the
-current response auto-submits at zero: DAT 4 minutes, each RAT item 15 seconds, and
-each DRAT block 2 minutes. Raven, BFI-10, demographics, SCTT, consent, and breaks
-remain external or self-paced because the approved protocol defines no timer for them.
+Before Raven's, set the day's Q-global group session code in the admin panel. The
+participant page picks it up within a few seconds. The admin panel also shows each
+participant's progress and can reset a visit; a reset keeps the old data.
 
-Score both local downloads together:
+## Making changes
+
+### One-time setup
+
+1. **Accounts.** Ask a current admin to add you to:
+   - this GitHub repository, with write access;
+   - the Supabase organization "AI3", which holds `DRAT-DEV` and `DRAT-PROD`;
+   - the Vercel team that holds `drat-dev` and `drat-prod`.
+2. **Tools.** Install `git`, `python3` (3.10+), Node.js 18+ (the scripts call the
+   Supabase and Vercel CLIs through `npx`) and `curl`.
+3. **Secrets.** Create three gitignored files at the repository root, using
+   [`.env.example`](../../../.env.example) as the template:
+   - `.env` holds `SUPABASE_API_KEY` (a Supabase personal access token, from
+     supabase.com/dashboard/account/tokens) and `VERCEL_API_KEY` (from
+     vercel.com/account/tokens).
+   - `.env.dev` and `.env.prod` each hold `SUPABASE_PROJECT_REF`, `DB_PASSWORD`,
+     `DATA_EXPORT_TOKEN`, `ADMIN_PASSWORD` and `RESEARCHER_EMAILS`. Values set
+     here override `.env`; for example, `.env.prod` may carry its own
+     `SUPABASE_API_KEY`.
+
+   Get the values from a current admin over a secure channel. Never commit these
+   files or paste them into Slack or email.
+
+### Workflow
+
+1. Start a branch from `main`. Never commit to `main` directly:
+   ```bash
+   git checkout main && git pull
+   git checkout -b <your-name>/<short-description>
+   ```
+2. Edit the code. The participant-facing text lives here:
+
+   | What | File |
+   |---|---|
+   | DAT and RAT instructions | `js/sessions/session1.js` |
+   | DRAT and SCTT instructions, SCTT part pages | `js/sessions/session2.js` |
+   | Raven's handoff page | `js/tests/raven.js` |
+   | BFI-10 | `js/tests/bfi10.js` |
+   | Demographics | `js/tests/demographics.js` |
+   | Sign-in, consent and visit screens | `js/study-code.js` |
+   | Task orders, consent PDF, Q-global link | `js/study-config.js` |
+
+3. Preview it locally. Without a backend, data stays in the browser and a
+   "LOCAL PREVIEW" banner shows:
+   ```bash
+   python3 -m http.server 8001
+   # open http://127.0.0.1:8001/?session=1&order=1
+   ```
+4. Run the checks:
+   ```bash
+   node tests/online-store.test.js && node tests/study-flow-config.test.js
+   python3 prepare_backend_manifest.py
+   ```
+5. Deploy to dev and take the changed screens there:
+   ```bash
+   bash deploy.sh dev
+   ```
+   One command deploys both halves. It rebuilds the backend manifest, applies
+   database migrations, sets the server secrets, deploys the Supabase Edge
+   Functions, and publishes the frontend to Vercel.
+6. Commit, push, and open a pull request into `main`. After merging, deploy prod
+   from an up-to-date `main`:
+   ```bash
+   git checkout main && git pull
+   echo prod | bash deploy.sh prod   # or run it plain and type 'prod' at the prompt
+   ```
+   Each deploy stamps the git commit into every saved answer (`app_version`), so
+   deploy prod only from a clean, committed `main`. A tree with uncommitted
+   changes is recorded as `<sha>-dirty`.
+
+If you change which items a visit saves, finish-session will reject visits that
+don't match. Examples are adding or removing a task, a SCTT item or a DRAT set. In
+that case, update `prepare_backend_manifest.py` and the counts it prints (Visit 1 =
+35, Visit 2 = 22). Test a full visit on dev before deploying prod.
+
+### Data
 
 ```bash
-cd scoring
-python score_battery.py \
-  --input /path/to/drat-local-session-1.json /path/to/drat-local-session-2.json
+bash get_data.sh prod     # data/prod/: raw JSON plus participant, session and event CSVs
+bash admin.sh prod status # every participant's visit 1/2 progress
 ```
 
-This produces raw audit outputs plus RAT/BFI/SCTT-fluency scores. Add the explicit
-GloVe/FastText/SBERT and approved random-noun-pool arguments documented in
-`scoring/README.md` for final DAT/DRAT scores. Development deployment and remaining approval gates are tracked in
-[`docs/HANDOFF.md`](../../../docs/HANDOFF.md).
+`data/` is gitignored. Participant emails are stored only in the `participants`
+table; every other table uses the study code. Exports and backups contain those
+emails, so keep them on secure university storage, never in git, Slack or email.
+The Supabase Free plan has **no automatic backups**, so run `get_data.sh prod`
+after every lab session.
+
+## About the battery
 
 A configurable, **within-subjects** battery of four creativity/cognition tests,
 built on the same serverless backend as the rating-study `template/` but with a
@@ -93,34 +165,6 @@ battery/
 └── scoring/                    ← offline pipeline (see scoring/README.md)
 ```
 
-## Quickstart
-
-```bash
-# 1. Test locally, then open http://127.0.0.1:8001/?session=1&order=2&slot=0
-python3 -m http.server 8001
-
-# 2. Verify the browser/backend manifest before deployment.
-python3 prepare_backend_manifest.py
-
-# 3. Deploy. Two environments, each its own Supabase project + Vercel project:
-#      dev  → https://drat-dev.vercel.app   test data only; shows a DEV banner
-#      prod → participants; never wipe; deploy asks you to type 'prod'
-#    Settings live in gitignored files at the repo root (template: .env.example):
-#      .env       SUPABASE_API_KEY, VERCEL_API_KEY (shared)
-#      .env.dev   SUPABASE_PROJECT_REF, DB_PASSWORD, DATA_EXPORT_TOKEN
-#      .env.prod  same keys, prod values (a different DATA_EXPORT_TOKEN)
-bash deploy.sh dev        # migrations, secrets, functions, staged frontend, vercel --prod
-
-# 4. Generate development codes and test both session URLs.
-bash admin.sh dev generate 2 TEST
-# https://drat-dev.vercel.app/?session=1&order=2
-# https://drat-dev.vercel.app/?session=2
-
-# 5. Export and score.
-bash get_data.sh dev
-cd scoring && pip install -r requirements.txt
-python score_battery.py --input ../data/dev/battery_sessions.json
-```
 
 ## How it works
 

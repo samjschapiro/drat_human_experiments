@@ -37,23 +37,13 @@ for full usage and
 [`src/human_experiments/battery/DESIGN_NOTES.md`](src/human_experiments/battery/DESIGN_NOTES.md)
 for the design rationale.
 
-## Quickstart — preview the battery locally
+## Running, changing and deploying the study
 
-```bash
-cd src/human_experiments/battery
-
-# 1. Generate the client bundle from the item banks + config.
-#    (needs PyYAML: `uv add pyyaml` or `pip install pyyaml`)
-python prepare_battery.py --config battery_config.example.yaml
-
-# 2. Serve it and open in a browser. With no PROLIFIC_PID it runs in DEBUG mode
-#    (slot 0, nothing submitted; the payload is logged to the console).
-python -m http.server 8777
-open http://127.0.0.1:8777/
-```
-
-To deploy for real recruitment (Supabase/AWS backend + Vercel frontend + Prolific),
-and to score collected data, follow the battery README.
+The study runs as **Creativity and Reasoning Tasks** at https://drat-prod.vercel.app,
+with a test copy at https://drat-dev.vercel.app. To run a lab session, set up
+access, make a change, deploy it (`bash deploy.sh dev|prod`) or export data
+(`bash get_data.sh prod`), follow
+[`src/human_experiments/battery/README.md`](src/human_experiments/battery/README.md).
 
 ## Repository layout
 
@@ -89,6 +79,5 @@ resources/      ← external reference material (gitignored)
 
 ## Status
 
-The battery platform (frontend, backend, item banks, offline scoring) is built and
-locally verified. Remaining before a live study: drop in the real DRAT anchor sets /
-noun pool, insert IRB-approved consent text, deploy the backend, and recruit.
+Visit 1 is running with participants on prod. Visit 2 started on 2026-10-15.
+Scoring runs offline from the exported data (`src/human_experiments/battery/scoring/`).

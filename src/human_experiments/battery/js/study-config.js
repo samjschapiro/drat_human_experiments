@@ -1,7 +1,8 @@
-// Study-flow configuration. Pearson group codes are intentionally never stored here.
+// Study-flow configuration. The Pearson group code is set in /admin, not here.
 window.STUDY_CONFIG = {
     protocolVersion: "drat-human-2026-v2",
-    // false: a deployed dev site saves to its Supabase backend. Prod stays locked in core.js.
+    // false: a deployed site saves to its Supabase backend. true: data stays in the browser
+    // (deploy.sh then publishes the frontend only, and refuses prod).
     localPreviewOnly: false,
     consentPdfUrl: "assets/Consent_DRAT_v3_tracked.pdf",
     consentVersion: "Consent_DRAT_v3_tracked",
