@@ -287,10 +287,12 @@ def main() -> None:
     for session in sessions:
         for response in session.get("responses", []):
             preload_words.update(response.get("anchors") or [])
-            preload_words.update(
-                value for key, value in (response.get("response") or {}).items()
-                if key.startswith("w") and value
-            )
+            # Non-word screens save a string or number (e.g. raven_handoff: "opened_pearson").
+            words = response.get("response")
+            if isinstance(words, dict):
+                preload_words.update(
+                    value for key, value in words.items() if key.startswith("w") and value
+                )
     for _, model in models:
         if hasattr(model, "preload"):
             model.preload(preload_words)
