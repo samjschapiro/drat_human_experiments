@@ -50,14 +50,24 @@ participant's progress and can reset a visit; a reset keeps the old data.
 2. **Tools.** Install `git`, `python3` (3.10+), Node.js 18+ (the scripts call the
    Supabase and Vercel CLIs through `npx`) and `curl`.
 3. **Secrets.** Create three gitignored files at the repository root, using
-   [`.env.example`](../../../.env.example) as the template:
-   - `.env` holds `SUPABASE_API_KEY` (a Supabase personal access token, from
-     supabase.com/dashboard/account/tokens) and `VERCEL_API_KEY` (from
-     vercel.com/account/tokens).
-   - `.env.dev` and `.env.prod` each hold `SUPABASE_PROJECT_REF`, `DB_PASSWORD`,
-     `DATA_EXPORT_TOKEN`, `ADMIN_PASSWORD` and `RESEARCHER_EMAILS`. Values set
-     here override `.env`; for example, `.env.prod` may carry its own
-     `SUPABASE_API_KEY`.
+   [`.env.example`](../../../.env.example) as the template. A value in `.env.dev`
+   or `.env.prod` overrides the same key in `.env`.
+
+   | Key | File | Dev and prod | What it is |
+   |---|---|---|---|
+   | `SUPABASE_API_KEY` | `.env` (and `.env.prod`) | Different | Supabase personal access token (supabase.com/dashboard/account/tokens). Prod has its own, because the shared one cannot see `DRAT-PROD`. |
+   | `VERCEL_API_KEY` | `.env` | Shared | Vercel token (vercel.com/account/tokens) |
+   | `SUPABASE_PROJECT_REF` | `.env.<env>` | Different | `DRAT-DEV` or `DRAT-PROD` project ref |
+   | `DB_PASSWORD` | `.env.<env>` | Different | That project's database password |
+   | `DATA_EXPORT_TOKEN` | `.env.<env>` | **Different** | Researcher token for `get_data.sh` and `admin.sh` (`openssl rand -hex 32`) |
+   | `ADMIN_PASSWORD` | `.env.<env>` | **Different** | Password for that site's `/admin` panel |
+   | `RESEARCHER_EMAILS` | `.env.<env>` | Same list | Emails allowed into `/admin`, comma-separated |
+
+   The export token and admin password are deliberately different per
+   environment, so a dev credential can never read or change prod data. Each
+   server rejects the other environment's token. The server secrets are set
+   from these files on every deploy, so after changing a value, run
+   `bash deploy.sh <env>` to apply it.
 
    Get the values from a current admin over a secure channel. Never commit these
    files or paste them into Slack or email.
