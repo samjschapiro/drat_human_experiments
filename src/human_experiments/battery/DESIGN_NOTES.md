@@ -1,6 +1,13 @@
 # Design notes — creativity battery
 
-The *why* behind the battery, separate from the README walkthrough. For the shared
+The *why* behind the battery, separate from the README walkthrough.
+
+> **History note (2026-10-16).** The battery started as a one-sitting, online
+> Prolific battery that reused the rating template's backend (`getSlot`,
+> `submit-data`). The live study is now an in-person, two-visit study with its own
+> session backend (`start-session`, `save-block`, `finish-session`; see
+> [`AGENTS.md`](AGENTS.md)). The two sections below on reusing the template
+> backend and `getSlot` describe that earlier design; the rest still applies. For the shared
 backend rationale (slot locking, JSON-per-session, service-role key), see
 [`../DESIGN_NOTES.md`](../DESIGN_NOTES.md).
 

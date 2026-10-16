@@ -26,18 +26,18 @@ loaded by gensim. Install `sentence-transformers` to include SBERT.
 ## Run
 
 ```bash
-# 1. Pull submissions (writes data/battery_raw.json)
-cd .. && bash get_data.sh supabase && cd scoring
+# 1. Export the data (writes ../data/prod/battery_sessions.json, among others)
+cd .. && bash get_data.sh prod && cd scoring
 
 # 2. Score everything
 python score_battery.py \
-    --input ../data/battery_raw.json \
+    --input ../data/prod/battery_sessions.json \
     --embedding glove=/models/glove.840B.300d.txt \
     --embedding fasttext=/models/crawl-300d-2M.vec \
     --embedding sbert=sbert:sentence-transformers/all-mpnet-base-v2 \
     --drat-pool /path/to/approved-random-nouns.txt
 
-# Or score the two local-preview downloads together
+# Or score the two local-preview downloads together (no backend)
 python score_battery.py \
     --input ~/Downloads/drat-local-session-1.json \
             ~/Downloads/drat-local-session-2.json

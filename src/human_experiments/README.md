@@ -1,11 +1,11 @@
 # Human-Experiment Template
 
-> **Two scaffolds live here.** `template/` (below) is for **rating studies** —
-> sliders over stimuli, balanced between-subjects. `battery/` is a **within-subjects
-> creativity battery** (DAT · RAT · SCTT · DRAT) where participants *generate*
-> responses and scoring is offline; it reuses this backend almost verbatim. If your
-> task is the four creativity tests, start with [`battery/README.md`](battery/README.md)
-> and [`battery/DESIGN_NOTES.md`](battery/DESIGN_NOTES.md).
+> **Two scaffolds live here.** `template/` (below) is for **rating studies**:
+> sliders over stimuli, balanced between-subjects, recruited online. `battery/` is
+> the **live DRAT study** ("Creativity and Reasoning Tasks"), an in-person,
+> two-visit study with its own session backend. If your task involves the study,
+> start with [`battery/AGENTS.md`](battery/AGENTS.md) and
+> [`battery/README.md`](battery/README.md); nothing below applies to it.
 
 A reusable scaffold for online between-subjects human studies that collect continuous-scale ratings on a set of stimuli, recruit participants from a crowd-sourcing platform (Prolific by default), and persist one JSON per completed session.
 

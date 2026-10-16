@@ -1,5 +1,7 @@
 # Next-phase implementation plan
 
+> **Archived 2026-10-16. Historical; may not match the current code.** Written while the study flow was being built (October 2026). For the current study see [`src/human_experiments/battery/README.md`](../../src/human_experiments/battery/README.md) and [`AGENTS.md`](../../src/human_experiments/battery/AGENTS.md).
+
 Updated: October 12, 2026
 Status: **approved by Prit; frontend and backend integration implemented, development deployment/pilot pending**
 
