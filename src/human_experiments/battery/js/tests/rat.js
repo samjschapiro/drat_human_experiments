@@ -11,11 +11,7 @@ window.BATTERY_MODULES["rat"] = {
         // Per-participant item order (seeded by slot so it's reproducible).
         const items = ctx.seededShuffle(bank, ctx.slot * 31 + 7);
 
-        const intro = {
-            type: jsPsychInstructions,
-            pages: [cfg.intro_html],
-            show_clickable_nav: true,
-        };
+        const intro = window.timedInstructions(cfg.intro_html, cfg.intro_delay_sec);
 
         const trials = items.map((item, idx) => {
             const cd = ctx.makeCountdown(cfg.item_time_limit_sec,
@@ -30,10 +26,13 @@ window.BATTERY_MODULES["rat"] = {
                     `<div style="text-align:center;margin:18px 0">${cues}</div>`,
                 questions: [{
                     prompt: "What single word connects all three?",
-                    name: "answer", required: false, columns: 24,
+                    name: "answer", required: true, columns: 24,
                 }],
                 button_label: "Submit",
-                data: { test: "rat", item_id: item.item_id, battery_tag: "task" },
+                data: { test: "rat", item_id: item.item_id, presentation_index: idx,
+                        battery_tag: "task",
+                        displayed_stimuli: { cues: item.cues, time_limit_sec: cfg.item_time_limit_sec,
+                            submission_locked_until_timeout: true } },
                 on_load: cd.start,
                 on_finish: (data) => { cd.stop(); data.timed_out = cd.expired(); },
             };

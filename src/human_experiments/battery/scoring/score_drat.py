@@ -21,15 +21,16 @@ import numpy as np
 
 from _embed import cosine_dist, cosine_sim, in_vocab, normalize_word
 
-POOL_PATH = Path(__file__).parent.parent / "item_banks" / "drat_noun_pool.example.txt"
-
-
-def load_pool(path: Path = POOL_PATH) -> list[str]:
+def load_pool(path: Path) -> list[str]:
     words = []
     for line in Path(path).read_text().splitlines():
         line = line.strip()
         if line and not line.startswith("#"):
             words.append(line.lower())
+    if not words:
+        raise ValueError(f"DRAT noun pool is empty: {path}")
+    if len(words) != len(set(words)):
+        raise ValueError(f"DRAT noun pool contains duplicate entries: {path}")
     return words
 
 
@@ -75,7 +76,8 @@ def score_drat(words: list[str], anchors: list[str], model, pool: list[str],
             survivors.append(nw)
 
     if len(survivors) < min_survivors:
-        return {"drat_score": None, "n_survivors": len(survivors),
+        # The study's DRAT scoring rule assigns zero for fewer than three survivors.
+        return {"drat_score": 0.0, "n_survivors": len(survivors),
                 "threshold": round(tau, 4), "survivors": survivors}
 
     dists = [cosine_dist(model[a], model[b]) for a, b in itertools.combinations(survivors, 2)]

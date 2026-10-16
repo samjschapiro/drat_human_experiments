@@ -20,11 +20,7 @@ window.BATTERY_MODULES["dat"] = {
                 `style="font-size:16px;padding:6px 8px;width:240px"></div>`;
         }
 
-        const intro = {
-            type: jsPsychInstructions,
-            pages: [cfg.intro_html],
-            show_clickable_nav: true,
-        };
+        const intro = window.timedInstructions(cfg.intro_html, cfg.intro_delay_sec);
 
         const task = {
             type: jsPsychSurveyHtmlForm,
@@ -33,8 +29,14 @@ window.BATTERY_MODULES["dat"] = {
                 `different from each other as possible.</p>`,
             html: `<div style="text-align:center">${fields}</div>`,
             button_label: "Submit",
-            data: { test: "dat", item_id: "dat_single", battery_tag: "task" },
-            on_load: cd.start,
+            data: { test: "dat", item_id: "dat_single", battery_tag: "task",
+                    displayed_stimuli: { response_limit: n, time_limit_sec: cfg.time_limit_sec,
+                                         submission_locked_until_timeout: true,
+                                         instructions: cfg.intro_html } },
+            on_load: () => {
+                cd.start();
+                window.requireAnyTextResponse("Enter at least one noun before submitting.");
+            },
             on_finish: (data) => { cd.stop(); data.timed_out = cd.expired(); },
         };
 

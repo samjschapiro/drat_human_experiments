@@ -1,0 +1,531 @@
+# Deployment handoff for Wasiq
+
+> **Archived 2026-10-16. Historical; may not match the current code.** Written while the study flow was being built (October 2026). For the current study see [`src/human_experiments/battery/README.md`](../../src/human_experiments/battery/README.md) and [`AGENTS.md`](../../src/human_experiments/battery/AGENTS.md).
+
+Updated: October 12, 2026
+
+## Purpose
+
+This document contains the deployment work needed to move the completed local
+two-session study flow onto the existing Supabase + Vercel infrastructure.
+It is written for Wasiq, who owns deployment and backend integration.
+
+The integration branch is ready for an isolated **development** deployment. It
+combines the locally verified participant flow with Wasiq's session/event backend.
+Production mode remains deliberately locked until the development acceptance run
+and study-team decisions listed below are complete.
+
+## Code to integrate
+
+| Item | Value |
+|---|---|
+| Repository | `https://github.com/samjschapiro/drat_human_experiments` |
+| Wasiq deployment PR | `https://github.com/samjschapiro/drat_human_experiments/pull/2` |
+| Frontend branch | `prit/drat-study-flow` (`930c721`) |
+| Integration branch | `prit/study-backend-integration` |
+| Integration base | `7057ec7` (`wasiq/session-backend`) |
+| Verified deployment baseline | `009b16c` (`main`, merged PR #2) |
+| Study-flow commit | `95c6119` — local two-session flow |
+| Completion commit | `c9ace09` — Session 2 gate and scoring pipeline |
+| Frontend completion | `930c721` — consent, fixed order, Pearson handoff, validation, hard timers |
+| Backend completion | `7057ec7` — study codes, session/event saves, server gating, admin/export |
+| Upstream main | `009b16c` (`origin/main`) |
+
+The integration branch is separate from `main`. Nothing from it has been merged or
+deployed, and production remains deliberately locked.
+
+## What Wasiq already completed in PR #2
+
+PR #2 changed deployment and infrastructure only; it intentionally did not change
+the study tasks, screens, or wording. The following work is already implemented and
+should be preserved rather than rebuilt:
+
+| Area | Verified PR #2 implementation |
+|---|---|
+| Endpoint alignment | Renamed frontend and AWS routes to match Supabase's `get-slot` and `submit-data` function names. |
+| Runtime configuration | Replaced the broken deployment-time `sed` substitution with generated `js/deploy-config.js` settings. The committed copy remains empty for local debug use. |
+| Supabase CLI layout | Added `config.toml` and moved the schema into `migrations/` so `db push` applies it correctly. Participant-facing functions deploy without the gateway JWT requirement. |
+| Protected export | `get-data` now requires `Authorization: Bearer $DATA_EXPORT_TOKEN` and fails with 401 for a missing or incorrect token. |
+| Database security | Removed the `source_ip` field, enabled RLS without public policies, and revoked public/`anon`/`authenticated` execution of `claim_slot()`. |
+| Safe Vercel artifact | Added a `.vercelignore` allowlist so answer keys, scoring code, backend code, and source materials are not published. |
+| Dev/prod separation | Added `deploy.sh dev|prod` and `get_data.sh dev|prod`, with separate Supabase and Vercel projects, separate environment files, environment-specific staging, and production confirmation. |
+| Operator visibility | Added visible DEV/DEBUG banners and removed the previous silent behavior where a missing `PROLIFIC_PID` ran without saving. |
+| Deployment tooling | Added Vercel token support, stable deployed-URL parsing, timestamped protected exports, and CSV generation using the Python standard library. |
+| Verification reported in PR | Tested the migration, slot assignment, export-token check, and permissions locally; then completed a live dev browser run with database save/export and confirmed private files returned 404. |
+
+The PR reported its live dev deployment at `https://drat-dev.vercel.app`. Treat this
+as evidence that the inherited one-session deployment path worked at the time of the
+PR, not as proof that the newer two-session branch is deployed there.
+
+## What Prit's branch adds on top
+
+- A local Session 1 flow: counterbalanced DAT, RAT, and Raven handoff, followed by
+  BFI-10, an instructed-response check, and optional demographics.
+- A local Session 2 flow: eight two-minute DRAT blocks, a break, the orange
+  attention check, and 12 SCTT items with three required responses each.
+- A deterministic set of 260 DRAT assignments generated from the supplied study
+  workbooks and validated against the propensity-score CSV.
+- A local event store with resume and idempotent item capture.
+- A client transport that can send unsynced events to `POST /save-block` once that
+  endpoint exists.
+- Offline linked-session export and scoring.
+- The exact stamped consent PDF with an agree/decline gate before Session 1.
+- Six explicit lab-meeting order URLs, independent of the DRAT assignment slot.
+- Pearson's stable Q-global self-registration URL with a supervised new-tab gate.
+- Hard minimum-exposure locks for DAT, RAT, and DRAT, with timer-forced
+  partial/empty saves at zero.
+
+The new participant flow reuses Wasiq's deployment foundation, but its storage and
+session model is intentionally different from PR #2's original Prolific-style,
+single-submission model.
+
+## Pearson Q-global / Raven boundary
+
+Raven is not implemented inside Thinking Tasks. Pearson Q-global is the licensed
+external administration and scoring system. The intended direction is:
+
+```text
+Thinking Tasks handoff -> Q-global administration and scoring
+                       -> research-team score export
+                       -> offline merge by deidentified study code
+```
+
+The review branch supplies Pearson's stable self-registration URL, a supervised
+new-tab handoff, a return screen, two auditable events (`raven_handoff` and
+`raven_return`), and an offline importer for an already-normalized CSV with
+`study_code,standardized_score`. An iframe is not viable because Q-global responds
+with `X-Frame-Options: SAMEORIGIN`.
+
+It does not authenticate to Q-global, provision an examinee, pass an identifier,
+verify completion, retrieve scores, or understand Pearson's native export schema.
+The acknowledgement button stays disabled until the Q-global link is opened, but
+`raven_return` remains participant self-report and must not be treated as verified
+Pearson completion. Pearson credentials, the fresh group session code, licensed test
+content, and the private study key must never enter the browser or repository.
+
+Before the dev pilot, obtain the interruption/reset procedure and sample export
+listed in `docs/NEXT_PHASE_IMPLEMENTATION_PLAN.md`. Unless Babak explicitly requires
+and documents an approved automated Pearson integration, the supported workflow is
+a supervised external handoff followed by a manual deidentified score export and
+offline merge.
+
+## Two-session backend now integrated
+
+Wasiq's `wasiq/session-backend` work and Prit's October 12 frontend are combined on
+the integration branch. It now provides:
+
+1. an issued-code allowlist plus researcher code generation/import/reset commands;
+2. 260 server-assigned DRAT slots;
+3. `/start-session` with resume inventory, rotating bearer token, and server-side
+   Session 1 → Session 2 enforcement;
+4. per-task idempotent `/save-block` rows with conflict rejection;
+5. `/finish-session` checks for exactly 35 Session 1 or 22 Session 2 events;
+6. protected paginated export of sessions and events;
+7. a generated backend manifest tied to the same v2 browser materials;
+8. persistence and validation of the fixed lab-meeting order and stamped-consent
+   version/timestamp; and
+9. dev deployment support with production still explicitly blocked in `core.js`.
+
+The remaining work is operational rather than another backend redesign: deploy the
+integration branch to dev, seed test codes, execute the acceptance matrix, verify
+exports/scoring, and obtain the unresolved Pearson and study-code policy decisions.
+The authorized Pearson identity mapping and group session code must remain outside
+the application and repository.
+
+## Recommended production data flow
+
+```text
+Participant enters deidentified study code and session number
+        |
+        v
+start/resume endpoint
+  - validate an issued study code through the approved access mechanism
+  - Session 1: claim or return one stable slot and saved-item inventory
+  - Session 2: require completed Session 1 and reuse its slot
+        |
+        v
+Browser runs the assigned jsPsych timeline
+        |
+        v
+POST /save-block after every recordable task
+  - event_id makes retries idempotent
+  - response returns stable session_record_id
+        |
+        v
+finish-session operation
+  - server checks expected saved events
+  - server marks the session complete
+        |
+        v
+Authenticated researcher export -> offline scoring
+```
+
+The backend is authoritative for slot assignment, completion, and the Session 2
+prerequisite. `localStorage` remains a retry/resume cache, not a security boundary.
+
+## Minimal backend contract
+
+Endpoint names other than `/save-block` can be adjusted, but the client and server
+must agree exactly before the production lock is removed.
+
+### Start or resume a session
+
+Recommended endpoint: `POST /start-session`
+
+Request:
+
+```json
+{
+  "protocol_version": "drat-human-2026-v2",
+  "study_code": "DRAT-001",
+  "session_number": 1,
+  "session1_order_index": 1,
+  "consent_version": "Consent_DRAT_v3_tracked",
+  "consent_accepted_at": "ISO-8601 timestamp"
+}
+```
+
+Response:
+
+```json
+{
+  "protocol_version": "drat-human-2026-v2",
+  "session_record_id": "uuid",
+  "session_token": "opaque-rotatable-token",
+  "slot": 17,
+  "session_number": 1,
+  "lab_meeting_order_index": 1,
+  "order_source": "lab-meeting-url",
+  "test_order": ["dat", "raven", "rat"],
+  "consent_version": "Consent_DRAT_v3_tracked",
+  "consent_accepted_at": "ISO-8601 timestamp",
+  "saved_item_ids": [],
+  "complete": false
+}
+```
+
+Required behavior:
+
+- Normalize and validate the study code using the same 3–32 character rule as the
+  frontend: uppercase letters, digits, and hyphens only.
+- Accept only a pre-issued study code or the alternative access mechanism approved
+  by Babak. A syntactically valid arbitrary code must not consume a slot.
+- For Session 1, validate `lab_meeting_order_index` in `0..5`, derive the full order
+  server-side, and preserve the consent version/timestamp. A decline never calls
+  this endpoint and must not create a row.
+- Session 1 atomically claims the lowest available slot or returns the previously
+  assigned slot for that study code.
+- Session 2 returns the Session 1 slot only when Session 1 is complete; otherwise it
+  returns a clear 409/403 error.
+- Repeated calls return the same session record and slot.
+- Return the assigned test order and server-saved item IDs so refreshes and a second
+  approved browser/device can resume without repeating completed tasks.
+- Never accept a client-provided slot as authoritative.
+- Issue an opaque session token (or equivalent approved session credential) that
+  subsequent save/finish calls can use. Store only a hash server-side.
+- Token reissuance/resume must follow the approved researcher, station-passcode, or
+  equivalent recovery procedure; knowing a predictable study code alone is not
+  sufficient authorization.
+
+### Save one event
+
+Required endpoint: `POST /save-block`
+
+The current payload is produced in `js/save-client.js`:
+
+```json
+{
+  "protocol_version": "drat-human-2026-v2",
+  "study_code": "DRAT-001",
+  "session_number": 2,
+  "session_record_id": "uuid",
+  "event_id": "drat-human-2026-v2:DRAT-001:2:slot_017_causal_k3",
+  "test_id": "drat",
+  "block_id": "slot_017_causal_k3",
+  "item_id": "slot_017_causal_k3",
+  "assignment": {
+    "slot": 17,
+    "lab_meeting_order_index": null,
+    "order_source": "session-2-fixed",
+    "test_order": ["drat", "sctt"],
+    "presentation_index": 0,
+    "anchor_size": 3,
+    "relation": "causal",
+    "source_triplet_id": 4
+  },
+  "displayed_stimuli": {},
+  "response": {},
+  "started_at": "ISO-8601 timestamp",
+  "completed_at": "ISO-8601 timestamp",
+  "response_time_ms": 120000,
+  "timed_out": true,
+  "attention_check": null,
+  "consent_version": null,
+  "consent_accepted_at": null,
+  "app_version": "meeting-flow-v2"
+}
+```
+
+The real payload can additionally contain `task`, `prompt`, `anchors`, `set_id`,
+and `pair_id`.
+
+For DAT, RAT, and DRAT, `timed_out=true` is expected: the approved frontend holds
+each timed screen for its full duration and submits at zero. It indicates a
+timer-driven submission, not participant failure.
+
+Required behavior:
+
+- Authenticate the request to the session established from the study code. Do not
+  trust the payload's slot or session number without checking the stored session.
+  The recommended browser contract is `Authorization: Bearer <session_token>`.
+- Validate the protocol version, required fields, expected test/item ID for that
+  session, and a reasonable request-size limit before storing the event.
+- Make `event_id` unique and idempotent. Replaying an identical event succeeds
+  without creating a second row.
+- Reject a conflicting replay of the same `event_id` rather than overwriting data.
+- Return `{ "session_record_id": "uuid" }` on every success.
+- Preserve the entire event payload so displayed stimuli, order, timing, source IDs,
+  responses, and attention flags remain auditable.
+- Do not capture request IP or user-agent.
+
+### Finish a session
+
+Recommended endpoint: `POST /finish-session`
+
+The server should verify the exact expected item IDs—not only the total count—before
+setting `complete=true`.
+Expected recordable events are:
+
+- Session 1: 35 events — DAT 1, RAT 30, Raven 2, BFI-10 1, demographics 1.
+- Session 2: 22 events — DRAT 8, break 1, orange check 1, SCTT 12.
+
+The operation must be idempotent. A completed Session 1 is the only state that
+permits Session 2 to start.
+
+### Researcher export
+
+The existing `GET /get-data` bearer-token protection can be retained. Its export
+must now return session records plus ordered event payloads rather than assuming a
+single `payload.responses` array in `submissions`.
+
+Keep `DATA_EXPORT_TOKEN` server-side. A failed or missing token must remain 401.
+
+## Recommended database shape
+
+Use a new migration for the already-deployed dev project; do not edit history and
+assume the modified old migration will rerun.
+
+If Babak confirms a pre-generated code list, store only the approved deidentified
+codes in an allowlist table or equivalent server-side registry. The private mapping
+from study code to participant identity remains outside this application and
+database.
+
+### `slots`
+
+- Keep atomic assignment with `FOR UPDATE SKIP LOCKED`.
+- Seed slots `0..259`.
+- Store the deidentified `study_code` as the stable assignee.
+- Preserve the uniqueness constraint so one study code cannot claim two slots.
+
+### `study_sessions`
+
+Suggested fields:
+
+- `id uuid primary key`
+- `study_code text not null`
+- `session_number smallint check (session_number in (1,2))`
+- `slot integer not null references slots(id)`
+- `protocol_version text not null`
+- `test_order jsonb not null`
+- `session_token_hash text not null` (or equivalent server-managed session state)
+- `complete boolean not null default false`
+- `created_at`, `completed_at`, `updated_at` timestamps
+- `unique (study_code, session_number)`
+
+### `study_events`
+
+Suggested fields:
+
+- `event_id text primary key`
+- `session_id uuid not null references study_sessions(id)`
+- `test_id text not null`
+- `item_id text not null`
+- `presentation_index integer`
+- `payload jsonb not null`
+- `received_at timestamptz not null default now()`
+- `unique (session_id, item_id)`
+
+Row-level security should remain enabled with no public table policies. Edge
+functions use the service-role key; that key must never enter frontend files.
+
+## Frontend integration tasks
+
+1. Replace URL/default slot selection in `js/core.js` with the server response from
+   the start/resume operation.
+2. Hydrate the client with the returned test order and `saved_item_ids` so it can
+   resume from server state, including on an approved second browser/device.
+3. Pass the server-issued `session_record_id` into `createStudyStore` rather than
+   beginning with a `local-*` identifier in production.
+4. Send the server-issued session token with save and completion requests; never
+   put a service-role key or researcher export token in the browser.
+5. Extend `save-client.js` so `finish()` calls the completion endpoint and only
+   reports success after the server confirms completion.
+6. On page load, retry locally queued unsynced events before allowing the participant
+   to continue.
+7. Keep the local assignment/order mismatch guard.
+8. Preserve the implemented stamped-consent and fixed `order=1..6` URL fields in the
+   start/resume contract; do not derive the lab-meeting order from the slot.
+9. Preserve the implemented Q-global new-tab URL and Raven self-report fields.
+10. Implement only the approved identifier handoff. Do not place a participant name,
+    email, Pearson credential, or study-key file in frontend configuration or event
+    payloads.
+11. Preserve `raven_handoff` and `raven_return` in the production export. Treat the
+    participant's return response as self-report, not proof of Q-global completion.
+12. After receiving a sample Pearson export, add the smallest explicit normalization
+    step needed to produce `study_code,standardized_score`; fail on missing,
+    duplicate, or unmapped identifiers.
+13. Only after dev integration passes, set `localPreviewOnly` to false and replace the
+   unconditional production fatal guard with an explicit approved deployment flag.
+14. Replace the current `meeting-flow-v2` development identifier only when the team
+    selects a production release identifier.
+
+## Existing deployment files to reuse
+
+| File | Role |
+|---|---|
+| `src/human_experiments/battery/deploy.sh` | Loads dev/prod settings, deploys Supabase, stages browser files, deploys Vercel |
+| `src/human_experiments/battery/backend/supabase/deploy.sh` | Applies migrations, secrets, and Edge Functions |
+| `src/human_experiments/battery/backend/supabase/config.toml` | Disables gateway JWT for participant-facing functions |
+| `src/human_experiments/battery/vercel.json` | Static Vercel configuration |
+| `src/human_experiments/battery/js/deploy-config.js` | Empty committed local config; deployment generates the environment-specific copy |
+| `src/human_experiments/battery/get_data.sh` | Protected, timestamped data export |
+
+Before deployment:
+
+- Update `backend/supabase/deploy.sh` and `config.toml` to deploy/configure
+  `start-session`, `save-block`, and `finish-session`, plus the revised `get-data`.
+- Update `get_data.sh` for the new session/event export schema.
+- Retire or clearly exclude the inherited `get-slot` / `submit-data` endpoints from
+  this study flow.
+- Derive `TOTAL_SLOTS` from the generated `STUDY_MATERIALS.assignments` count (260),
+  not the obsolete `js/battery-data.js` value (160), and add a new migration that
+  seeds the missing slots without rewriting applied migration history.
+- Remove the inherited `PROLIFIC_PID` test URL. `COMPLETION_URL` is unused by the new
+  in-person flow and should be removed unless the study team approves a specific
+  post-session destination.
+
+## Configuration names
+
+Do not commit values. The existing scripts expect these names:
+
+- Shared deployment credentials: `SUPABASE_API_KEY`, `VERCEL_API_KEY`.
+- Per environment: `SUPABASE_PROJECT_REF`, `DB_PASSWORD`, `DATA_EXPORT_TOKEN`.
+- Supabase function/runtime: `TOTAL_SLOTS` plus automatically provided Supabase URL
+  and service-role credentials.
+
+Dev and production must remain separate Supabase and Vercel projects. Never test by
+resetting or wiping production.
+
+## Privacy and security requirements
+
+- The study code is the only participant identifier in the experiment application.
+- Do not request or store names, email addresses, dates of birth, gender, Pearson
+  group codes, or Pearson credentials.
+- Do not store source IP, user-agent, browser fingerprint, or unnecessary client
+  metadata.
+- Confirm Supabase/Vercel request-log retention with the study team if the IRB rule
+  applies beyond research database rows and exports.
+- Keep RAT answer keys, scoring code, database functions, and source materials out
+  of the Vercel public artifact.
+- Keep RLS enabled and revoke direct public execution of slot-claiming functions.
+- Keep researcher export protected by a strong server-side bearer token or approved
+  researcher authentication.
+- Restrict CORS to the approved dev/prod origins if practical; never use CORS as the
+  only authorization control.
+
+## Dev acceptance checklist
+
+Complete all checks against dev before any production deployment:
+
+- [ ] A new study code gets one slot in `0..259`; repeated entry returns the same slot.
+- [ ] An unknown/unissued study code is rejected without consuming a slot.
+- [ ] Consent decline creates no session/event row; agreement preserves the exact
+      consent version and timestamp.
+- [ ] Two different study codes started from the same meeting URL receive the same
+      validated Session 1 order even when their slots differ.
+- [ ] A second browser/device can resume using the same study code.
+- [ ] Start/resume returns the server-saved item inventory and the browser skips those
+      completed items without trusting local storage.
+- [ ] Session 2 is rejected before Session 1 is complete.
+- [ ] Session 2 inherits Session 1's slot and cannot submit a different slot.
+- [ ] Refresh after a saved task resumes at the next task.
+- [ ] Retrying a block does not create a duplicate event.
+- [ ] A conflicting duplicate `event_id` is rejected and logged.
+- [ ] Session 1 finishes with 35 stored events.
+- [ ] Every Raven position in the six Session 1 orders reaches the approved Q-global
+      handoff and resumes at the correct next task.
+- [ ] The production export contains exactly one `raven_handoff` and one
+      `raven_return` event per completed Session 1.
+- [ ] The approved study-code/Q-global-examinee-ID mapping works without sending a
+      name, email, or other direct identifier to the experiment database.
+- [ ] A deidentified Q-global sample export is normalized and merged without missing
+      or duplicate study codes.
+- [ ] An interrupted or incomplete Q-global administration follows Babak's approved
+      recovery procedure and is not falsely marked complete.
+- [ ] Session 2 finishes with 22 stored events.
+- [ ] All eight DRAT cells and all 12 SCTT items appear in the export.
+- [ ] Timed-out trials preserve partial responses and `timed_out=true`.
+- [ ] DAT, RAT, and DRAT cannot advance early by Submit or Enter; each automatically
+      submits at its configured zero point and the following timed item locks again.
+- [ ] `/get-data` is 401 without the correct token.
+- [ ] The public site returns 404 for RAT answers, scoring code, backend files, and
+      non-browser study materials.
+- [ ] Database rows contain no IP, user-agent, name, or email.
+- [ ] The linked two-session export runs through `scoring/score_battery.py`.
+- [ ] Vercel and Supabase point to the same environment; dev never points to prod.
+- [ ] The study team completes one supervised end-to-end pilot and approves it.
+
+## Supervisor decisions still required
+
+Babak/the study team must provide or approve:
+
+- Study-code issuance and format.
+- The interrupted-Raven return/recovery workflow and station reset procedure.
+- Who performs and protects the authorized Pearson-record-to-study-code mapping.
+- A deidentified Q-global export sample and the exact standardized-score field to
+  retain.
+- Whether score export/merge is intentionally manual or an approved Pearson API
+  integration is required.
+- Q-global station sign-in and simultaneous-administration procedure.
+- Any required change to the approved Session 1-only consent placement or
+  participant-facing wording.
+- Whether a station passcode, PBEL network restriction, or researcher authentication
+  is required.
+- The exact DRAT random-noun pool and approved embedding resources for final scoring.
+- Production launch approval after the dev pilot.
+
+These decisions should be configuration or copy changes where possible; they should
+not silently change the experimental assignment logic.
+
+## Ownership
+
+| Owner | Responsibility |
+|---|---|
+| Prit | Participant flow, test implementation, assignment generation, client-side integration in `core.js` / `save-client.js`, local scoring, and study-flow QA |
+| Wasiq | Supabase schema/functions, server-side session authorization and gating, tokens/secrets, Vercel/Supabase dev deployment, protected export, and deployment QA |
+| Shared | Final API contract, frontend/backend integration test, privacy verification, and supervised end-to-end dev pilot |
+| Babak/study team | Study codes; Q-global URL, license/account workflow, identifier mapping, score export, and recovery procedure; consent/copy; scoring resources; and launch approval |
+
+## Reproducibility note
+
+The committed `js/study-materials.js` already contains the 260 validated assignments
+and should be deployed as-is. Regenerating it is not a deployment step. If regeneration
+is required, `prepare_study_materials.py` needs Python `openpyxl`; declare/install that
+dependency explicitly and verify that regeneration reproduces the committed bundle.
+
+## Definition of deployment done
+
+Deployment is done only when the production backend is authoritative for assignment,
+incremental saves, completion, and the Session 2 prerequisite; all privacy and export
+checks pass; the dev pilot is approved; and the production lock is removed in an
+explicit reviewed commit. A successful Vercel build by itself is not completion.
